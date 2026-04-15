@@ -710,6 +710,9 @@ if (Test-ConanInstallFresh -ExpectedStamp $conanInstallStamp) {
     Write-Success "Conan install finished."
 }
 
+$cmakeUserPresetsPath = Join-Path $repoRoot "CMakeUserPresets.json"
+Remove-RepoItem -Path $cmakeUserPresetsPath
+
 Write-Step "Generating clangd compile database"
 Sync-ClangdCompilationDatabase -FFmpegSourceDir $resolvedFFmpegSourceDir
 Write-Success "Dependency setup complete."

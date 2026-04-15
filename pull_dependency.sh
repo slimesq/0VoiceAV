@@ -24,6 +24,7 @@ flavor=""
 build_type=""
 jobs="$(nproc 2>/dev/null || echo 1)"
 force_conan=0
+conan_system_package_manager_conf=()
 
 if [[ -t 1 ]]; then
     color_magenta=$'\033[35m'
@@ -677,6 +678,15 @@ fi
 
 ensure_gcc13_toolchain
 
+conan_system_package_manager_conf=(
+    -c "tools.system.package_manager:mode=install"
+)
+if [[ "$(id -u)" -ne 0 ]]; then
+    conan_system_package_manager_conf+=(
+        -c "tools.system.package_manager:sudo=True"
+    )
+fi
+
 write_section "Selected configuration"
 write_info "FFmpeg flavor: $flavor"
 write_info "Requested build type: $build_type"
@@ -722,10 +732,11 @@ else
     conan remote add conancenter https://center2.conan.io --force
 
     write_step "Running conan install"
-    conan install . \
+    DEBIAN_FRONTEND=noninteractive conan install . \
         -r=conancenter \
         "--build=$build_policy" \
         -c "tools.build:jobs=$jobs" \
+        "${conan_system_package_manager_conf[@]}" \
         -s "build_type=$conan_build_type" \
         -s "compiler=gcc" \
         -s "compiler.version=$conan_compiler_version" \
@@ -736,6 +747,8 @@ else
     printf '%s' "$expected_stamp" >"$dependency_stamp_path"
     write_success "Conan install finished."
 fi
+
+remove_repo_item "$repo_root/CMakeUserPresets.json"
 
 write_step "Generating clangd compile database"
 sync_clangd_compilation_database "$resolved_ffmpeg_source_dir"
