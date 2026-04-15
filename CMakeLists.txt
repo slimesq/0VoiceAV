@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.22)
 
 project(VoiceAVLearning VERSION 0.1.0 LANGUAGES C CXX)
 
+if(MSVC)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/utf-8>)
+    set(CMAKE_MSVC_OUTPUT_ENCODING "UTF-8")
+    set(CMAKE_UTF8_CODEPAGE ON)
+endif()
+
 set(VOICE_AV_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(VOICE_AV_EXAMPLES_DIR "${VOICE_AV_SOURCE_DIR}/voice_av")
 if(CMAKE_TOOLCHAIN_FILE)
@@ -60,6 +66,7 @@ function(voice_av_configure_target target_name)
             MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
         )
         target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
+        target_compile_options(${target_name} PRIVATE /utf-8)
         target_link_options(${target_name} PRIVATE /IGNORE:4099)
     endif()
 

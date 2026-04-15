@@ -7,7 +7,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/build/cmake/Debug/voice_av_08_05_decode_audio.exe",
       "args": ["believe.aac", "believe.pcm"],
-      "cwd": "${workspaceFolder}/lessons/08-ffmpeg-demuxing-and-decoding-practice/testFiles",
+      "cwd": "${workspaceFolder}/test_files",
       "stopAtEntry": false,
       "console": "integratedTerminal"
     }
