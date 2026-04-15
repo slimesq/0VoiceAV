@@ -1,0 +1,36 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "voice-av-vs2022-x64",
+      "displayName": "Voice AV Visual Studio 2022 x64",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/cmake",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/generators/conan_toolchain.cmake"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "voice-av-vs2022-x64-debug",
+      "displayName": "Voice AV Visual Studio 2022 x64 Debug",
+      "configurePreset": "voice-av-vs2022-x64",
+      "configuration": "Debug",
+      "jobs": 16
+    },
+    {
+      "name": "voice-av-vs2022-x64-release",
+      "displayName": "Voice AV Visual Studio 2022 x64 Release",
+      "configurePreset": "voice-av-vs2022-x64",
+      "configuration": "Release",
+      "jobs": 16
+    }
+  ]
+}

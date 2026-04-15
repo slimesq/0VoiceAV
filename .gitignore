@@ -10,6 +10,16 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
+build/
+out/
+.vs/
+.cache/
+third_party/ffmpeg-src/
+third_party/_downloads/
+third_party/_ffmpeg-extract/
+*.pcm
+*.yuv
+testFiles/
 
 # CLion
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
