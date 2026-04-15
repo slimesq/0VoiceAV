@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug lesson audio video",
+      "name": "Debug voice_av audio video",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/cmake/Debug/lesson_08_05_decode_audio.exe",
+      "program": "${workspaceFolder}/build/cmake/Debug/lesson_08_06_decode_video.exe",
       "args": ["believe.aac", "believe.pcm"],
-      "cwd": "${workspaceFolder}/lessons/08-ffmpeg-demuxing-and-decoding-practice/testFiles",
+      "cwd": "${workspaceFolder}/voice_av/08-ffmpeg-demuxing-and-decoding/testFiles",
       "stopAtEntry": false,
       "console": "integratedTerminal"
     }

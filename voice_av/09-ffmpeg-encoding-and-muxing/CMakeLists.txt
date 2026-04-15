@@ -1,0 +1,1 @@
+voice_av_add_child_projects()

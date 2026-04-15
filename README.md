@@ -99,54 +99,44 @@ Run:
 .\build\cmake\Release\voice_av_learning.exe
 ```
 
-## Lessons
+## Voice AV Examples
 
-Course examples live under `lessons`. The original `src` folder was renamed so
-each example can be grouped by lesson.
+Course examples live under `voice_av`. The original `src` folder was renamed so
+examples can be grouped by topic.
 
-- `lessons/00-ffmpeg-version`: prints the linked FFmpeg library versions.
-- `lessons/08-ffmpeg-demuxing-and-decoding-practice`: imported Qt examples
+- `voice_av/00-ffmpeg-version`: prints the linked FFmpeg library versions.
+- `voice_av/08-ffmpeg-demuxing-and-decoding`: imported Qt examples
   converted into auto-discovered CMake targets.
+- `voice_av/09-ffmpeg-encoding-and-muxing`: prepared for encoding and muxing
+  examples with the same auto-discovered CMake layout.
 
-Build targets added for lesson 08:
+Build targets added for group 08:
 
 ```powershell
 cmake --build --preset voice-av-vs2022-x64-debug --target lesson_08_05_decode_audio
 cmake --build --preset voice-av-vs2022-x64-debug --target lesson_08_06_decode_video
 ```
 
-In Visual Studio, set one of those lesson targets as the startup project and
-run it. CMake configures the debugger working directory and default arguments
-for the imported lesson 08 targets.
-
 Run from PowerShell by passing paths explicitly:
 
 ```powershell
-Push-Location .\lessons\08-ffmpeg-demuxing-and-decoding-practice\testFiles
+Push-Location .\voice_av\08-ffmpeg-demuxing-and-decoding\testFiles
 ..\..\..\build\cmake\Debug\lesson_08_05_decode_audio.exe believe.aac believe.pcm
 ..\..\..\build\cmake\Debug\lesson_08_06_decode_video.exe source.200kbps.768x320_10s.h264 source.yuv
 Pop-Location
 ```
 
-Lesson 08 input test files are kept together in
-`lessons/08-ffmpeg-demuxing-and-decoding-practice/testFiles`.
-The imported lesson 08 executables are written to the normal CMake build output
-directory. Visual Studio debugging still uses `testFiles` as the working
-directory with default arguments.
+Group 08 input test files are kept together in
+`voice_av/08-ffmpeg-demuxing-and-decoding/testFiles`.
+The imported group 08 executables are written to the normal CMake build output
+directory. Run them from `testFiles`, or pass full paths for the input and
+output files.
 
 The old Qt project files and bundled FFmpeg 4.2.1 SDK from the archives were
 not imported. This project now builds the examples through the root CMake
 project and links against Conan's FFmpeg 7.1.3 package.
 
-To add another lesson 08 example later, create a new subdirectory under
-`lessons/08-ffmpeg-demuxing-and-decoding-practice` with a `main.c` or
-`main.cpp`. CMake will create a target named from that folder, for example
-`07-my-demo/main.c` becomes `lesson_08_07_my_demo`. Re-run configure after
-adding the folder:
-
-```powershell
-cmake --preset voice-av-vs2022-x64
-```
+See `voice_av/README.md` for the steps to add a new voice_av example.
 
 See `docs/ffmpeg-conan-options.md` for the requested native FFmpeg configure
 flags that can and cannot be represented by the official Conan Center recipe.

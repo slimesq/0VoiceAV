@@ -1,13 +1,15 @@
 #include <iostream>
 
-extern "C" {
+extern "C"
+{
 #include <libavcodec/avcodec.h>
 #include <libavfilter/avfilter.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 }
 
-int main() {
+int main()
+{
     avformat_network_init();
 
     std::cout << "FFmpeg version: " << av_version_info() << '\n';

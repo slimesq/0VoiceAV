@@ -351,11 +351,11 @@ function Get-ProjectCompilationCommands {
         $ffmpegIncludeArg = "-isystem`"$($ffmpegIncludeDir.Replace('\', '/'))`" "
     }
 
-    $lessonRoot = Join-Path $repoRoot "lessons"
+    $exampleRoot = Join-Path $repoRoot "voice_av"
     $sourceFiles = @()
-    if (Test-Path -LiteralPath $lessonRoot) {
-        $sourceFiles += Get-ChildItem -LiteralPath $lessonRoot -Recurse -Filter "*.c" -File -ErrorAction SilentlyContinue
-        $sourceFiles += Get-ChildItem -LiteralPath $lessonRoot -Recurse -Filter "*.cpp" -File -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $exampleRoot) {
+        $sourceFiles += Get-ChildItem -LiteralPath $exampleRoot -Recurse -Filter "*.c" -File -ErrorAction SilentlyContinue
+        $sourceFiles += Get-ChildItem -LiteralPath $exampleRoot -Recurse -Filter "*.cpp" -File -ErrorAction SilentlyContinue
     }
     $sourceFiles = $sourceFiles | Sort-Object FullName
 
