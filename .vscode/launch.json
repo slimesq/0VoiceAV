@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug 0Voice AV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_08_05_decode_audio.exe",
+      "args": ["believe.aac", "believe.pcm"],
+      "cwd": "${workspaceFolder}/lessons/08-ffmpeg-demuxing-and-decoding-practice/testFiles",
+      "stopAtEntry": false,
+      "console": "integratedTerminal"
+    }
+  ]
+}
