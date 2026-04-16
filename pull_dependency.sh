@@ -94,6 +94,34 @@ require_command() {
     command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
 
+require_conan_version() {
+    local minimum_version="$1"
+    local current_version
+
+    current_version="$(conan --version | awk '{ print $3 }')"
+    if ! python3 - "$current_version" "$minimum_version" <<'PY'
+import sys
+
+
+def parse_version(value):
+    parts = []
+    for part in value.split("."):
+        digits = ""
+        for char in part:
+            if not char.isdigit():
+                break
+            digits += char
+        parts.append(int(digits or "0"))
+    return tuple((parts + [0, 0, 0])[:3])
+
+
+sys.exit(0 if parse_version(sys.argv[1]) >= parse_version(sys.argv[2]) else 1)
+PY
+    then
+        die "Conan $minimum_version or newer is required for Linux full FFmpeg. Found Conan $current_version."
+    fi
+}
+
 run_as_root() {
     if [[ "$(id -u)" -eq 0 ]]; then
         "$@"
@@ -646,6 +674,10 @@ fi
 flavor="$(printf '%s' "$flavor" | tr '[:upper:]' '[:lower:]')"
 [[ "$flavor" == "light" || "$flavor" == "full" ]] ||
     die "Invalid FFmpeg flavor '$flavor'. Use 'light' or 'full'."
+
+if [[ "$flavor" == "full" ]]; then
+    require_conan_version "2.18.0"
+fi
 
 if [[ -z "$build_type" ]]; then
     if [[ -t 0 ]]; then

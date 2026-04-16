@@ -12,7 +12,9 @@ The project exposes a local Conan option named `ffmpeg_flavor`:
   GCC 13 when needed because Conan Center's Linux x86_64 FFmpeg binaries are
   published for GCC 13.
 - `full`: enables the Conan options that correspond to the requested FFmpeg
-  configure flags below. This may require local source builds.
+  configure flags below. This may require local source builds. On Linux, use
+  Conan 2.18 or newer because the SDL dependency graph pulls recipes that need
+  newer Conan support.
 
 Install dependencies interactively:
 

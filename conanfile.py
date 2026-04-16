@@ -25,8 +25,9 @@ class VoiceAVLearningConan(ConanFile):
 
     def configure(self):
         ffmpeg = self.options["ffmpeg"]
+        flavor = str(self.options.ffmpeg_flavor)
 
-        if self.options.ffmpeg_flavor == "light":
+        if flavor == "light":
             self._configure_light_ffmpeg(ffmpeg)
         else:
             self._configure_full_ffmpeg(ffmpeg)
@@ -37,10 +38,15 @@ class VoiceAVLearningConan(ConanFile):
         ffmpeg.shared = False
 
     def _configure_full_ffmpeg(self, ffmpeg):
-        # Static FFmpeg libraries, matching --enable-static.
-        ffmpeg.shared = False
-        if self.settings.os != "Windows":
+        self._configure_light_ffmpeg(ffmpeg)
+
+        os_name = str(self.settings.os)
+        if os_name != "Windows":
             ffmpeg.fPIC = True
+
+        # Full is light plus extra capabilities. Do not set feature options to
+        # False here, because that can remove capabilities from Conan Center's
+        # default ffmpeg package configuration.
 
         # Core FFmpeg libraries.
         ffmpeg.avdevice = True
@@ -60,50 +66,28 @@ class VoiceAVLearningConan(ConanFile):
         ffmpeg.with_fribidi = True
         ffmpeg.with_harfbuzz = True
         ffmpeg.with_libaom = True
-        ffmpeg.with_libdav1d = False
-        ffmpeg.with_libfdk_aac = False
+        ffmpeg.with_libdav1d = True
+        ffmpeg.with_libfdk_aac = True
         ffmpeg.with_libiconv = True
         ffmpeg.with_libmp3lame = True
-        ffmpeg.with_libsvtav1 = False
+        ffmpeg.with_libsvtav1 = True
         ffmpeg.with_libvpx = True
         ffmpeg.with_libwebp = True
         ffmpeg.with_libx264 = True
         ffmpeg.with_libx265 = True
         ffmpeg.with_libxml2 = True
         ffmpeg.with_lzma = True
-        ffmpeg.with_openh264 = False
+        ffmpeg.with_openh264 = True
         ffmpeg.with_openjpeg = True
         ffmpeg.with_opus = True
         ffmpeg.with_sdl = True
         ffmpeg.with_vorbis = True
         # The Windows/MSVC recipe path has trouble detecting libzmq through
         # pkg-config, even when Conan has resolved the dependency.
-        ffmpeg.with_zeromq = self.settings.os != "Windows"
-        ffmpeg.with_soxr = False
-        ffmpeg.with_whisper = False
+        if os_name != "Windows":
+            ffmpeg.with_zeromq = True
         ffmpeg.with_zlib = True
 
         # The Conan Center recipe does not expose gnutls. It supports openssl
         # or securetransport; use openssl so HTTPS/TLS protocols are enabled.
         ffmpeg.with_ssl = "openssl"
-
-        # Linux/FreeBSD-only hardware and desktop integrations. Only VAAPI is
-        # requested; the rest are set false to avoid recipe defaults adding
-        # unrelated desktop/audio integrations.
-        if self.settings.os in ("Linux", "FreeBSD"):
-            ffmpeg.with_libalsa = False
-            ffmpeg.with_libdrm = False
-            ffmpeg.with_pulse = False
-            ffmpeg.with_vaapi = True
-            ffmpeg.with_vdpau = False
-            ffmpeg.with_vulkan = False
-            ffmpeg.with_xcb = False
-            ffmpeg.with_xlib = False
-
-        # Apple-only integrations.
-        if self.settings.os == "Macos":
-            ffmpeg.with_appkit = False
-            ffmpeg.with_avfoundation = False
-            ffmpeg.with_audiotoolbox = False
-            ffmpeg.with_coreimage = False
-            ffmpeg.with_videotoolbox = False

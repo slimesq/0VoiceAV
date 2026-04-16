@@ -41,7 +41,8 @@ python3 -m pip install --user conan
 Make sure `~/.local/bin` is in `PATH` if `conan` is not found after the pip
 install. The dependency script will install `gcc-13`/`g++-13` when they are
 missing, because Conan Center's Linux `ffmpeg/7.1.3` binaries are published for
-GCC 13.
+GCC 13. Use Conan 2.18 or newer for the Linux `full` flavor; it enables SDL,
+whose current Conan Center dependency graph needs newer Conan recipe support.
 
 Install or refresh dependencies:
 
