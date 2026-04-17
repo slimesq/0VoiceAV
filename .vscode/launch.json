@@ -5,8 +5,11 @@
       "name": "Debug 0Voice AV",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_08_05_decode_audio.exe",
-      "args": ["believe.aac", "believe.pcm"],
+      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_08_06_decode_video.exe",
+      "args": [
+        "source.200kbps.768x320_10s.h264",
+        "source.200kbps.768x320_10s.yuv"
+      ],
       "cwd": "${workspaceFolder}/voice_av/test_files",
       "stopAtEntry": false,
       "console": "integratedTerminal"

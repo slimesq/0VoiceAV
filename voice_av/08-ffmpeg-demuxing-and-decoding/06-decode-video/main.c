@@ -8,9 +8,14 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/frame.h>
 #include <libavutil/mem.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libavcodec/codec.h"
+#include "libavcodec/codec_id.h"
+#include "libavcodec/packet.h"
+#include "libavutil/avutil.h"
 
 #define VIDEO_INBUF_SIZE 20480
 #define VIDEO_REFILL_THRESH 4096
@@ -31,9 +36,7 @@ static void print_video_format(AVFrame const* frame)
 
 static void decode(AVCodecContext* dec_ctx, AVPacket* pkt, AVFrame* frame, FILE* outfile)
 {
-    int ret;
-    /* send the packet with the compressed data to the decoder */
-    ret = avcodec_send_packet(dec_ctx, pkt);
+    int ret = avcodec_send_packet(dec_ctx, pkt);
     if (ret == AVERROR(EAGAIN))
     {
         fprintf(stderr,
@@ -47,11 +50,8 @@ static void decode(AVCodecContext* dec_ctx, AVPacket* pkt, AVFrame* frame, FILE*
                 pkt->size);
         return;
     }
-
-    /* read all the output frames (infile general there may be any number of them */
-    while (ret >= 0)
+    while (!ret)
     {
-        // 对于frame, avcodec_receive_frame内部每次都先调用
         ret = avcodec_receive_frame(dec_ctx, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
         {
@@ -59,41 +59,28 @@ static void decode(AVCodecContext* dec_ctx, AVPacket* pkt, AVFrame* frame, FILE*
         }
         else if (ret < 0)
         {
-            fprintf(stderr, "Error during decoding\n");
-            exit(1);
+            fprintf(stderr, "Error during decoding, err:%s\n", av_get_err(ret));
+            return;
         }
-        static int s_print_format = 0;
-        if (s_print_format == 0)
+        static int flag = 0;
+        if (flag == 0)
         {
-            s_print_format = 1;
+            flag = 1;
             print_video_format(frame);
         }
-
-        // 一般H264默认为 AV_PIX_FMT_YUV420P, 具体怎么强制转为 AV_PIX_FMT_YUV420P
-        // 在音视频合成输出的时候讲解 frame->linesize[1]  对齐的问题 正确写法
-        // linesize[]代表每行的字节数量，所以每行的偏移是linesize[]
-        for (int j = 0; j < frame->height; j++)
+        // yuv420p
+        for (int i = 0; i < frame->height; ++i)
         {
-            fwrite(frame->data[0] + j * frame->linesize[0], 1, frame->width, outfile);
+            fwrite(frame->data[0] + i * frame->linesize[0], 1, frame->width, outfile);
         }
-        for (int j = 0; j < frame->height / 2; j++)
+        for (int i = 0; i < frame->height / 2; ++i)
         {
-            fwrite(frame->data[1] + j * frame->linesize[1], 1, frame->width / 2, outfile);
+            fwrite(frame->data[1] + i * frame->linesize[1], 1, frame->width / 2, outfile);
         }
-        for (int j = 0; j < frame->height / 2; j++)
+        for (int i = 0; i < frame->height / 2; ++i)
         {
-            fwrite(frame->data[2] + j * frame->linesize[2], 1, frame->width / 2, outfile);
+            fwrite(frame->data[2] + i * frame->linesize[2], 1, frame->width / 2, outfile);
         }
-
-        // 错误写法 用source.200kbps.766x322_10s.h264测试时可以看出该种方法是错误的
-        //  写入y分量
-        //        fwrite(frame->data[0], 1, frame->width * frame->height,  outfile);//Y
-        //        // 写入u分量
-        //        fwrite(frame->data[1], 1, (frame->width)
-        //        *(frame->height)/4,outfile);//U:宽高均是Y的一半
-        //        //  写入v分量
-        //        fwrite(frame->data[2], 1, (frame->width)
-        //        *(frame->height)/4,outfile);//V：宽高均是Y的一半
     }
 }
 // 注册测试的时候不同分辨率的问题
@@ -105,19 +92,6 @@ int main(int argc, char** argv)
 {
     char const* outfilename;
     char const* filename;
-    AVCodec const* codec;
-    AVCodecContext* codec_ctx = NULL;
-    AVCodecParserContext* parser = NULL;
-    int len = 0;
-    int ret = 0;
-    FILE* infile = NULL;
-    FILE* outfile = NULL;
-    // AV_INPUT_BUFFER_PADDING_SIZE 在输入比特流结尾的要求附加分配字节的数量上进行解码
-    uint8_t inbuf[VIDEO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
-    uint8_t* data = NULL;
-    size_t data_size = 0;
-    AVPacket* pkt = NULL;
-    AVFrame* decoded_frame = NULL;
 
     if (argc <= 2)
     {
@@ -126,127 +100,115 @@ int main(int argc, char** argv)
     }
     filename = argv[1];
     outfilename = argv[2];
+    FILE* infile = NULL;
+    fopen_s(&infile, filename, "rb");
+    if (!infile)
+    {
+        printf("%s open fail.\n", filename);
+        return -1;
+    }
+    FILE* outfile = NULL;
+    fopen_s(&outfile, outfilename, "wb");
+    if (!infile)
+    {
+        printf("%s open fail.\n", outfilename);
+        return -1;
+    }
 
-    pkt = av_packet_alloc();
     enum AVCodecID video_codec_id = AV_CODEC_ID_H264;
-    if (strstr(filename, "264") != NULL)
+    if (strstr(filename, "mpeg"))
+    {
+        video_codec_id = AV_CODEC_ID_MJPEG;
+    }
+    else if (strstr(filename, "h264"))
     {
         video_codec_id = AV_CODEC_ID_H264;
     }
-    else if (strstr(filename, "mpeg2") != NULL)
-    {
-        video_codec_id = AV_CODEC_ID_MPEG2VIDEO;
-    }
     else
     {
-        printf("default codec id:%d\n", video_codec_id);
+        printf("The file type is not supported.\n");
+        return -1;
     }
 
-    // 查找解码器
-    codec = avcodec_find_decoder(video_codec_id);  // AV_CODEC_ID_H264
-    if (!codec)
-    {
-        fprintf(stderr, "Codec not found\n");
-        exit(1);
-    }
-    // 获取裸流的解析器 AVCodecParserContext(数据)  +  AVCodecParser(方法)
-    parser = av_parser_init(codec->id);
+    AVCodecParserContext* parser = av_parser_init(video_codec_id);
     if (!parser)
     {
-        fprintf(stderr, "Parser not found\n");
-        exit(1);
+        printf("av_parser_init error.\n");
+        return -1;
     }
-    // 分配codec上下文
-    codec_ctx = avcodec_alloc_context3(codec);
-    if (!codec_ctx)
+    AVCodec const* decoder = avcodec_find_decoder(video_codec_id);
+    if (!decoder)
     {
-        fprintf(stderr, "Could not allocate audio codec context\n");
-        exit(1);
+        printf("avcodec_find_decoder error.\n");
+        return -1;
+    }
+    AVCodecContext* dec_cxt = avcodec_alloc_context3(decoder);
+    int ret = avcodec_open2(dec_cxt, decoder, NULL);
+    if (ret < 0)
+    {
+        printf("avcodec_open2 error.\n");
+        return -1;
     }
 
-    // 将解码器和解码器上下文进行关联
-    if (avcodec_open2(codec_ctx, codec, NULL) < 0)
+    AVPacket* pkt = av_packet_alloc();
+    if (!pkt)
     {
-        fprintf(stderr, "Could not open codec\n");
-        exit(1);
+        printf("av_packet_alloc error.\n");
+        return -1;
+    }
+    AVFrame* frame = av_frame_alloc();
+    if (!frame)
+    {
+        printf("av_frame_alloc error in %d line.\n", __LINE__);
+        return -1;
     }
 
-    // 打开输入文件
-    infile = fopen(filename, "rb");
-    if (!infile)
-    {
-        fprintf(stderr, "Could not open %s\n", filename);
-        exit(1);
-    }
-    // 打开输出文件
-    outfile = fopen(outfilename, "wb");
-    if (!outfile)
-    {
-        avcodec_free_context(&codec_ctx);
-        exit(1);
-    }
-
-    // 读取文件进行解码
-    data = inbuf;
-    data_size = fread(inbuf, 1, VIDEO_INBUF_SIZE, infile);
-
+    uint8_t inbuf[VIDEO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE] = {};
+    int data_size = fread(inbuf, 1, VIDEO_INBUF_SIZE, infile);
     while (data_size > 0)
     {
-        if (!decoded_frame)
+        if (!frame)
         {
-            if (!(decoded_frame = av_frame_alloc()))
+            if (!(frame = av_frame_alloc()))
             {
-                fprintf(stderr, "Could not allocate audio frame\n");
-                exit(1);
+                printf("av_frame_alloc error in %d line.\n", __LINE__);
+                return -1;
             }
         }
 
-        ret = av_parser_parse2(parser,
-                               codec_ctx,
-                               &pkt->data,
-                               &pkt->size,
-                               data,
-                               data_size,
-                               AV_NOPTS_VALUE,
-                               AV_NOPTS_VALUE,
-                               0);
-        if (ret < 0)
-        {
-            fprintf(stderr, "Error while parsing\n");
-            exit(1);
-        }
-        data += ret;       // 跳过已经解析的数据
-        data_size -= ret;  // 对应的缓存大小也做相应减小
+        int parse_size = av_parser_parse2(parser,
+                                          dec_cxt,
+                                          &pkt->data,
+                                          &pkt->size,
+                                          inbuf,
+                                          data_size,
+                                          AV_NOPTS_VALUE,
+                                          AV_NOPTS_VALUE,
+                                          0);
+        decode(dec_cxt, pkt, frame, outfile);
 
-        if (pkt->size)
+        data_size -= parse_size;
+        if (parse_size > 0)
         {
-            decode(codec_ctx, pkt, decoded_frame, outfile);
+            memmove(inbuf, inbuf + parse_size, data_size);
         }
-
-        if (data_size < VIDEO_REFILL_THRESH)  // 如果数据少了则再次读取
+        else if (parse_size == EAGAIN || parse_size == 0)
         {
-            memmove(inbuf, data, data_size);  // 把之前剩的数据拷贝到buffer的起始位置
-            data = inbuf;
-            // 读取数据 长度: VIDEO_INBUF_SIZE - data_size
-            len = fread(data + data_size, 1, VIDEO_INBUF_SIZE - data_size, infile);
-            if (len > 0)
-            {
-                data_size += len;
-            }
+            int read_size = fread(inbuf + data_size, 1, VIDEO_INBUF_SIZE - data_size, infile);
+            data_size += read_size;
         }
     }
 
-    /* 冲刷解码器 */
-    pkt->data = NULL;  // 让其进入drain mode
+    // 冲刷解码器
+    pkt->data = NULL;
     pkt->size = 0;
-    decode(codec_ctx, pkt, decoded_frame, outfile);
+    decode(dec_cxt, pkt, frame, outfile);
 
-    fclose(outfile);
     fclose(infile);
-
-    avcodec_free_context(&codec_ctx);
+    fclose(outfile);
     av_parser_close(parser);
-    av_frame_free(&decoded_frame);
+    avcodec_free_context(&dec_cxt);
+    av_frame_free(&frame);
     av_packet_free(&pkt);
 
     printf("main finish, please enter Enter and exit\n");
