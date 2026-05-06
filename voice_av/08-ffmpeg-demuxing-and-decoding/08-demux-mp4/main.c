@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     int video_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     int audio_stream_index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
 
-    AVBitStreamFilter* bsf_filter = av_bsf_get_by_name("h264_mp4toannexb");
+    const AVBitStreamFilter* bsf_filter = av_bsf_get_by_name("h264_mp4toannexb");
     if (!bsf_filter) {
         printf("failed to get bitstream filter\n");
         fclose(h264_fp);
