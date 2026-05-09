@@ -8,6 +8,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/avio.h"
 #include "libavutil/frame.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 
@@ -42,15 +43,15 @@ static void decode(AVCodecContext* avctx, AVPacket* pkt, AVFrame* frame, FILE* o
         {
             flag = 1;
             print_sample_format(frame);
+        }
 
-            size_t sample_size = av_get_bytes_per_sample(frame->format);
+        size_t sample_size = av_get_bytes_per_sample(frame->format);
 
-            for (int i = 0; i < frame->nb_samples; ++i)
+        for (int i = 0; i < frame->nb_samples; ++i)
+        {
+            for (int j = 0; j < frame->ch_layout.nb_channels; ++j)
             {
-                for (int j = 0; j < frame->ch_layout.nb_channels; ++j)
-                {
-                    fwrite(frame->data[j] + sample_size * i, 1, sample_size, out_file);
-                }
+                fwrite(frame->data[j] + sample_size * i, 1, sample_size, out_file);
             }
         }
     }
@@ -124,7 +125,7 @@ int main(int argc, char* argv[])
     }
 
     // 4. 注册avio_alloc_context
-    unsigned char buf[BUF_SIZE] = {};
+    unsigned char* buf = av_malloc(BUF_SIZE);
     AVIOContext* avio_ctx =
         avio_alloc_context(buf, BUF_SIZE, 0, (void*)in_file, read_packet, NULL, NULL);
     if (!avio_ctx)
@@ -168,14 +169,14 @@ int main(int argc, char* argv[])
     while (!av_read_frame(fmt_ctx, pkt))
     {
         decode(avctx, pkt, frame, out_file);
+        av_packet_unref(pkt);
     }
 
     printf("read file finish\n");
     // 冲刷解码器
-    pkt->data = NULL;
-    pkt->size = 0;
-    decode(avctx, pkt, frame, out_file);
+    decode(avctx, NULL, frame, out_file);
 
+    av_free(buf);
     av_packet_free(&pkt);
     av_frame_free(&frame);
     avformat_close_input(&fmt_ctx);
