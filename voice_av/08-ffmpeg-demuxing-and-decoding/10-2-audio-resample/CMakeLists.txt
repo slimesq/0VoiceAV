@@ -1,0 +1,3 @@
+voice_av_add_current_example_executable()
+voice_av_get_current_example_target_name(targetName)
+target_include_directories(${targetName} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

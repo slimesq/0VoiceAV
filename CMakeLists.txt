@@ -2,17 +2,14 @@ cmake_minimum_required(VERSION 3.22)
 
 project(VoiceAVLearning VERSION 0.1.0 LANGUAGES C CXX)
 
-if(MSVC)
-    set(CMAKE_MSVC_OUTPUT_ENCODING "UTF-8")
-    set(CMAKE_UTF8_CODEPAGE ON)
-endif()
-
 set(VOICE_AV_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(VOICE_AV_EXAMPLES_DIR "${VOICE_AV_SOURCE_DIR}/voice_av")
-if(CMAKE_TOOLCHAIN_FILE)
-    get_filename_component(VOICE_AV_CONAN_GENERATORS_DIR "${CMAKE_TOOLCHAIN_FILE}" DIRECTORY)
-else()
-    set(VOICE_AV_CONAN_GENERATORS_DIR "${VOICE_AV_SOURCE_DIR}/build/generators")
+if(NOT VOICE_AV_CONAN_GENERATORS_DIR)
+    if(CMAKE_TOOLCHAIN_FILE)
+        get_filename_component(VOICE_AV_CONAN_GENERATORS_DIR "${CMAKE_TOOLCHAIN_FILE}" DIRECTORY)
+    else()
+        set(VOICE_AV_CONAN_GENERATORS_DIR "${VOICE_AV_SOURCE_DIR}/build/generators")
+    endif()
 endif()
 set(VOICE_AV_RUNTIME_OUTPUT_DIR "${CMAKE_BINARY_DIR}/$<CONFIG>")
 
@@ -25,7 +22,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(
     VOICE_AV_USE_RELEASE_CONAN_DEPS
-    "Use Release Conan packages when building non-Release multi-config CMake configs"
+    "Use Release Conan packages for non-Release builds when Debug packages are unavailable"
     ON
 )
 option(
@@ -41,10 +38,12 @@ set(VOICE_AV_FFMPEG_RELEASE_CONFIG
     "${VOICE_AV_CONAN_GENERATORS_DIR}/ffmpeg-Target-release.cmake"
 )
 
+set(VOICE_AV_USING_RELEASE_CONAN_DEPS OFF)
 if(VOICE_AV_USE_RELEASE_CONAN_DEPS
     AND EXISTS "${VOICE_AV_FFMPEG_RELEASE_CONFIG}"
     AND NOT EXISTS "${VOICE_AV_FFMPEG_DEBUG_CONFIG}"
 )
+    set(VOICE_AV_USING_RELEASE_CONAN_DEPS ON)
     set(CMAKE_MAP_IMPORTED_CONFIG_DEBUG Release)
     set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
     set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL Release)

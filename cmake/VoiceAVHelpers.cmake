@@ -29,9 +29,11 @@ function(voice_av_configure_target target_name)
     endif()
 
     if(MSVC)
-        set_property(TARGET ${target_name} PROPERTY
-            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
-        )
+        if(VOICE_AV_USING_RELEASE_CONAN_DEPS)
+            set_property(TARGET ${target_name} PROPERTY
+                MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+            )
+        endif()
         target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
         target_link_options(${target_name} PRIVATE /IGNORE:4099)
     endif()
@@ -111,6 +113,12 @@ function(voice_av_make_example_target_name output_var source_dir)
     set(${output_var} "voice_av_${_example_group_number}_${_project_name}" PARENT_SCOPE)
 endfunction()
 
+# Get the current example's target name before or after creating the target.
+function(voice_av_get_current_example_target_name output_var)
+    voice_av_make_example_target_name(_target_name "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(${output_var} "${_target_name}" PARENT_SCOPE)
+endfunction()
+
 function(voice_av_collect_sources output_var)
     set(_source_patterns)
     foreach(_extension IN ITEMS c cpp cc cxx h hpp hh hxx)
@@ -124,7 +132,7 @@ function(voice_av_collect_sources output_var)
 endfunction()
 
 function(voice_av_add_current_example_executable)
-    voice_av_make_example_target_name(_target_name "${CMAKE_CURRENT_SOURCE_DIR}")
+    voice_av_get_current_example_target_name(_target_name)
     voice_av_collect_sources(_sources)
     voice_av_add_example_executable(${_target_name}
         ${_sources}

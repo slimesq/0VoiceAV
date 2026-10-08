@@ -15,8 +15,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $ffmpegVersion = "7.1.3"
-$ffmpegNavigationStampVersion = "1"
+$ffmpegNavigationStampVersion = "2"
 $compilerCppStd = "17"
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $conanHome = Join-Path $repoRoot "build/windows/conan_home"
 $thirdPartyDir = Join-Path $repoRoot "third_party"
@@ -27,8 +28,6 @@ $archiveTempPath = "$archivePath.tmp"
 $extractDir = Join-Path $thirdPartyDir "_ffmpeg-extract"
 $ffmpegUrl = "https://ffmpeg.org/releases/ffmpeg-$ffmpegVersion.tar.bz2"
 $generatorDir = Join-Path $repoRoot "build/windows/generators"
-$cmakeBuildDir = Join-Path $repoRoot "build/cmake"
-$clangdBuildDir = Join-Path $repoRoot "build/clangd"
 $dependencyStateDir = Join-Path $repoRoot "build/windows/dependency_state"
 $dependencyStampPath = Join-Path $dependencyStateDir "conan-install.stamp"
 $script:StepNumber = 0
@@ -218,7 +217,7 @@ function Test-FFmpegNavigationFresh {
         return $false
     }
 
-    $currentStamp = Get-Content -LiteralPath $stampPath -Raw
+    $currentStamp = Get-Content -LiteralPath $stampPath -Raw -Encoding UTF8
     return ($currentStamp.Trim() -eq $ExpectedStamp.Trim())
 }
 
@@ -359,130 +358,10 @@ function Ensure-FFmpegNavigationFiles {
         }
     }
 
-    ConvertTo-Json -InputObject $compileCommands.ToArray() -Depth 3 |
-        Set-Content -LiteralPath (Join-Path $SourceDir "compile_commands.json") -Encoding ASCII
-    $navigationStamp |
-        Set-Content -LiteralPath (Join-Path $SourceDir ".voice-av-navigation.stamp") -Encoding ASCII
+    $compileCommandsJson = ConvertTo-Json -InputObject $compileCommands.ToArray() -Depth 3
+    [System.IO.File]::WriteAllText((Join-Path $SourceDir "compile_commands.json"), $compileCommandsJson, $utf8NoBom)
+    [System.IO.File]::WriteAllText((Join-Path $SourceDir ".voice-av-navigation.stamp"), $navigationStamp, $utf8NoBom)
     return $true
-}
-
-function Get-FFmpegPackageIncludeDir {
-    $ffmpegDataFiles = @()
-    if (Test-Path -LiteralPath $generatorDir) {
-        $ffmpegDataFiles = Get-ChildItem `
-            -LiteralPath $generatorDir `
-            -Filter "ffmpeg-*-data.cmake" `
-            -File `
-            -ErrorAction SilentlyContinue |
-            Sort-Object Name
-    }
-
-    foreach ($ffmpegDataPath in $ffmpegDataFiles.FullName) {
-        $packageLine = Select-String -LiteralPath $ffmpegDataPath -Pattern 'set\(ffmpeg_PACKAGE_FOLDER_[A-Z0-9_]+ "(.+)"\)' |
-            Select-Object -First 1
-
-        if ($null -ne $packageLine -and $packageLine.Matches.Count -gt 0) {
-            $packageFolder = $packageLine.Matches[0].Groups[1].Value
-            $packageFolder = $packageFolder.Replace('${CMAKE_CURRENT_LIST_DIR}', $generatorDir)
-            $includeDir = Join-Path $packageFolder "include"
-            if (Test-Path -LiteralPath $includeDir) {
-                return [System.IO.Path]::GetFullPath($includeDir)
-            }
-        }
-    }
-
-    $fallbackInclude = Get-ChildItem -LiteralPath $conanHome -Directory -Recurse -ErrorAction SilentlyContinue |
-        Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName "libavcodec/avcodec.h") } |
-        Select-Object -First 1
-
-    if ($null -ne $fallbackInclude) {
-        return $fallbackInclude.FullName
-    }
-
-    return $null
-}
-
-function Get-ProjectCompilationCommands {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$FFmpegSourceDir
-    )
-
-    $projectCompileCommandsPath = Join-Path $cmakeBuildDir "compile_commands.json"
-    if (Test-Path -LiteralPath $projectCompileCommandsPath) {
-        $projectCommands = Get-Content -LiteralPath $projectCompileCommandsPath -Raw | ConvertFrom-Json
-        return @($projectCommands)
-    }
-
-    $ffmpegIncludeDir = Get-FFmpegPackageIncludeDir
-    if ([string]::IsNullOrWhiteSpace($ffmpegIncludeDir)) {
-        $ffmpegIncludeArg = ""
-    } else {
-        $ffmpegIncludeArg = "-isystem`"$($ffmpegIncludeDir.Replace('\', '/'))`" "
-    }
-
-    $exampleRoot = Join-Path $repoRoot "voice_av"
-    $sourceFiles = @()
-    if (Test-Path -LiteralPath $exampleRoot) {
-        foreach ($sourceExtension in @("*.c", "*.cpp", "*.cc", "*.cxx")) {
-            $sourceFiles += Get-ChildItem -LiteralPath $exampleRoot -Recurse -Filter $sourceExtension -File -ErrorAction SilentlyContinue
-        }
-    }
-    $sourceFiles = $sourceFiles | Sort-Object FullName
-
-    $projectCommands = [System.Collections.Generic.List[object]]::new()
-    foreach ($sourceFile in $sourceFiles) {
-        $relativeSource = (Get-RelativePath -BasePath $repoRoot -Path $sourceFile.FullName).Replace("\", "/")
-        $relativeFFmpegSource = (Get-RelativePath -BasePath $repoRoot -Path $FFmpegSourceDir).Replace("\", "/")
-        $isCxx = $sourceFile.Extension -in @(".cc", ".cpp", ".cxx")
-        $compiler = if ($isCxx) { "clang++" } else { "clang" }
-        $language = if ($isCxx) { "c++" } else { "c" }
-        $standard = if ($isCxx) { "c++17" } else { "c11" }
-
-        $projectCommands.Add([PSCustomObject]@{
-            directory = $repoRoot
-            command = "$compiler -x $language -std=$standard -fsyntax-only -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -I$relativeFFmpegSource $ffmpegIncludeArg$relativeSource"
-            file = $sourceFile.FullName
-        }) | Out-Null
-    }
-
-    return $projectCommands.ToArray()
-}
-
-function Sync-ClangdCompilationDatabase {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$FFmpegSourceDir
-    )
-
-    $mergedCommands = [System.Collections.Generic.List[object]]::new()
-    $projectCommands = Get-ProjectCompilationCommands -FFmpegSourceDir $FFmpegSourceDir
-    foreach ($projectCommand in $projectCommands) {
-        $mergedCommands.Add($projectCommand) | Out-Null
-    }
-
-    $ffmpegCompileCommandsPath = Join-Path $FFmpegSourceDir "compile_commands.json"
-    if (Test-Path -LiteralPath $ffmpegCompileCommandsPath) {
-        $ffmpegCommands = Get-Content -LiteralPath $ffmpegCompileCommandsPath -Raw | ConvertFrom-Json
-        foreach ($ffmpegCommand in $ffmpegCommands) {
-            $mergedCommands.Add($ffmpegCommand) | Out-Null
-        }
-    }
-
-    if ($mergedCommands.Count -eq 0) {
-        return
-    }
-
-    New-Item -ItemType Directory -Force -Path $clangdBuildDir | Out-Null
-    ConvertTo-Json -InputObject $mergedCommands.ToArray() -Depth 5 |
-        Set-Content -LiteralPath (Join-Path $clangdBuildDir "compile_commands.json") -Encoding ASCII
-
-    Copy-Item `
-        -LiteralPath (Join-Path $clangdBuildDir "compile_commands.json") `
-        -Destination (Join-Path $repoRoot "compile_commands.json") `
-        -Force
-
-    Write-Success "clangd compile database ready: $clangdBuildDir"
 }
 
 function Get-FileSha256 {
@@ -504,9 +383,6 @@ function Get-ConanInstallStamp {
         [string]$Flavor,
 
         [Parameter(Mandatory = $true)]
-        [string]$SelectedBuildType,
-
-        [Parameter(Mandatory = $true)]
         [string]$ConanBuildType,
 
         [Parameter(Mandatory = $true)]
@@ -517,9 +393,9 @@ function Get-ConanInstallStamp {
     $profilePath = Join-Path $conanHome "profiles/default"
 
     return @(
+        "stamp_version=2"
         "ffmpeg_version=$ffmpegVersion"
         "flavor=$Flavor"
-        "selected_build_type=$SelectedBuildType"
         "conan_build_type=$ConanBuildType"
         "compiler_cppstd=$compilerCppStd"
         "build_policy=$BuildPolicy"
@@ -553,7 +429,7 @@ function Test-ConanInstallFresh {
         return $false
     }
 
-    $currentStamp = Get-Content -LiteralPath $dependencyStampPath -Raw
+    $currentStamp = Get-Content -LiteralPath $dependencyStampPath -Raw -Encoding UTF8
     return ($currentStamp.Trim() -eq $ExpectedStamp.Trim())
 }
 
@@ -567,7 +443,7 @@ function Sync-FFmpegSource {
         if ($navigationRefreshed) {
             Write-Info "Navigation files refreshed under the source tree."
         }
-        return $existingSource
+        return
     }
 
     Write-Notice "Managed FFmpeg source was not found at $ffmpegSourceDir."
@@ -611,10 +487,9 @@ function Sync-FFmpegSource {
     Move-Item -LiteralPath $extractedSource -Destination $ffmpegSourceDir
     Remove-RepoItem -Path $extractDir
 
-    Ensure-FFmpegNavigationFiles -SourceDir $ffmpegSourceDir
+    Ensure-FFmpegNavigationFiles -SourceDir $ffmpegSourceDir | Out-Null
 
     Write-Success "FFmpeg source ready: $ffmpegSourceDir"
-    return $ffmpegSourceDir
 }
 
 Write-Section "Voice AV dependency setup"
@@ -679,7 +554,7 @@ Write-Info "Conan build policy: $buildPolicy"
 Write-Info "C++ standard: $compilerCppStd"
 Write-Info "Parallel jobs: $Jobs"
 
-$resolvedFFmpegSourceDir = Sync-FFmpegSource
+Sync-FFmpegSource
 
 Write-Step "Preparing project-local Conan cache"
 
@@ -701,7 +576,6 @@ if (-not (Test-Path -LiteralPath $defaultProfile)) {
 
 $conanInstallStamp = Get-ConanInstallStamp `
     -Flavor $Flavor `
-    -SelectedBuildType $BuildType `
     -ConanBuildType $conanBuildType `
     -BuildPolicy $buildPolicy
 
@@ -719,10 +593,11 @@ if (Test-ConanInstallFresh -ExpectedStamp $conanInstallStamp) {
     }
 
     Write-Step "Running conan install"
-    conan install . `
+    conan install $repoRoot `
       -r=conancenter `
       "--build=$buildPolicy" `
       -c "tools.build:jobs=$Jobs" `
+      -c "tools.cmake.cmaketoolchain:user_presets=" `
       -s "build_type=$conanBuildType" `
       -s "compiler.cppstd=$compilerCppStd" `
       -o "&:ffmpeg_flavor=$Flavor"
@@ -731,13 +606,10 @@ if (Test-ConanInstallFresh -ExpectedStamp $conanInstallStamp) {
     }
 
     New-Item -ItemType Directory -Force -Path $dependencyStateDir | Out-Null
-    $conanInstallStamp | Set-Content -LiteralPath $dependencyStampPath -Encoding ASCII
+    [System.IO.File]::WriteAllText($dependencyStampPath, $conanInstallStamp, $utf8NoBom)
     Write-Success "Conan install finished."
 }
 
-$cmakeUserPresetsPath = Join-Path $repoRoot "CMakeUserPresets.json"
-Remove-RepoItem -Path $cmakeUserPresetsPath
-
 Write-Step "Generating clangd compile database"
-Sync-ClangdCompilationDatabase -FFmpegSourceDir $resolvedFFmpegSourceDir
+& (Join-Path $repoRoot "update_clangd.ps1") -BuildType $BuildType
 Write-Success "Dependency setup complete."

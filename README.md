@@ -70,13 +70,16 @@ Run the basic FFmpeg version example:
 
 ## Dependencies
 
-This project uses `ffmpeg/7.1.3` from Conan Center. Conan Center does not
-publish an exact `ffmpeg/7.1` recipe, so the project pins the latest available
-7.1 patch release.
+This project pins `ffmpeg/7.1.3` from Conan Center.
 
 Dependency files are generated under `build/<platform>/generators`, and this
 project uses a project-local Conan cache under `build/<platform>/conan_home`.
 For example, Windows uses `build/windows`, and Linux uses `build/linux`.
+
+Windows dependency setup preserves existing `CMakeUserPresets.json` files and
+disables Conan's automatic user preset generation. In `light` mode, Debug and
+Release share the same Release dependencies, so switching between them reuses
+the installed dependency configuration.
 
 Use a specific dependency flavor or build type:
 
@@ -109,22 +112,36 @@ FFmpeg source navigation for clangd:
 - writes the merged clangd database to `build/clangd/compile_commands.json`
 - copies a generated root `compile_commands.json` for editor compatibility
 
+On Windows, refresh the database after adding source files or changing target
+include directories or compile options:
+
+```powershell
+.\update_clangd.ps1 -BuildType Debug
+```
+
+This initializes the Visual Studio 2022 x64 compiler environment and configures
+a separate Ninja build in `build/clangd-cmake` with
+`CMAKE_EXPORT_COMPILE_COMMANDS=ON`. It uses the installed Conan package configs,
+merges the actual target compile commands with FFmpeg navigation entries, and
+writes UTF-8 databases. It does not compile the project or reinstall dependencies.
+Ninja must be on PATH or available through Visual Studio's CMake tools.
+The Windows dependency script also runs this refresh automatically.
+After refreshing, run `clangd: Restart language server` in VS Code.
+
+Both build paths use the same CMake policy for Release-only dependencies.
+When Debug packages are unavailable, `VOICE_AV_USE_RELEASE_CONAN_DEPS` enables
+Release package mapping and the matching MSVC runtime. When Debug packages are
+available, the compiler runtime follows the toolchain configuration.
+
 If clangd reports `STL1000: Unexpected compiler version`, update LLVM clangd
 to match your Visual Studio STL, or keep the provided `.clangd` setting that
 suppresses that editor-only version check.
 
-## Build Commands
+## Additional Build Commands
 
-Configure on Windows:
-
-```powershell
-cmake --preset voice-av-vs2022-x64
-```
-
-Build Debug or Release on Windows:
+The Quick Start covers Debug builds. Build Release on Windows:
 
 ```powershell
-cmake --build --preset voice-av-vs2022-x64-debug
 cmake --build --preset voice-av-vs2022-x64-release
 ```
 
@@ -134,17 +151,10 @@ Open the generated Visual Studio solution:
 cmake --open build/cmake
 ```
 
-Configure on Ubuntu 22 LTS:
+Configure and build Release on Ubuntu 22 LTS:
 
 ```bash
-cmake --preset voice-av-linux-debug
 cmake --preset voice-av-linux-release
-```
-
-Build Debug or Release on Ubuntu 22 LTS:
-
-```bash
-cmake --build --preset voice-av-linux-debug
 cmake --build --preset voice-av-linux-release
 ```
 
