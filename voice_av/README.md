@@ -17,7 +17,8 @@ voice_av/
 
 - `00-ffmpeg-version`: prints linked FFmpeg library versions.
 - `08-ffmpeg-demuxing-and-decoding`: demuxing and decoding examples.
-- `09-ffmpeg-encoding-and-muxing`: prepared for encoding and muxing examples.
+- `09-ffmpeg-encoding-and-muxing`: encoding, muxing, transcoding, image extraction,
+  watermarking, and RTMP publishing examples.
 
 ## Add an Example
 
@@ -28,9 +29,11 @@ voice_av/
   09-ffmpeg-encoding-and-muxing/
     01-encode-audio/
       CMakeLists.txt
-      main.c
-      encoder.c
-      encoder.h
+      include/
+        encoder.h
+      src/
+        main.c
+        encoder.c
 ```
 
 2. Use the standard example layout.
@@ -38,24 +41,41 @@ voice_av/
 ```text
 01-encode-audio/
   CMakeLists.txt
-  main.c
-  optional_helper.c
-  optional_helper.h
+  include/
+    encoder.h
+  src/
+    main.c
+    encoder.c
 ```
 
-Each example should keep its entry point and local helpers together. A per-example
-README is optional and can be added later when the run steps are not obvious.
+Examples with local headers follow `08-ffmpeg-demuxing-and-decoding/10-2-audio-resample`:
+keep `.h` and `.hpp` files in `include/`, and implementation files plus the entry
+point in `src/`. A single-file example without local headers can keep `main.c` or
+`main.cpp` beside `CMakeLists.txt`. A per-example README is optional and can be
+added later when the run steps are not obvious.
 
-3. Put the project's source files in that directory.
+3. Put the project's files in the matching directories.
 
 The project can contain multiple `.c`, `.cpp`, `.cc`, `.cxx`, `.h`, `.hpp`,
 `.hh`, and `.hxx` files.
 
-4. Add this one line to the project `CMakeLists.txt`:
+4. Add the target to the project `CMakeLists.txt`:
 
 ```cmake
 voice_av_add_current_example_executable()
 ```
+
+For examples with an `include/` directory, also add its include path:
+
+```cmake
+voice_av_add_current_example_executable()
+voice_av_get_current_example_target_name(targetName)
+target_include_directories(${targetName} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+```
+
+The helper collects source files recursively, including those in `src/`.
 
 The target name is calculated from the directory names:
 

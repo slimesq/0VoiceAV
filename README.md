@@ -164,7 +164,8 @@ Examples live under [voice_av](voice_av).
 
 - `voice_av/00-ffmpeg-version`: prints linked FFmpeg library versions.
 - `voice_av/08-ffmpeg-demuxing-and-decoding`: demuxing and decoding examples.
-- `voice_av/09-ffmpeg-encoding-and-muxing`: prepared for encoding and muxing examples.
+- `voice_av/09-ffmpeg-encoding-and-muxing`: encoding, muxing, transcoding, image extraction,
+  watermarking, and RTMP publishing examples.
 
 Build the current group 08 targets:
 
