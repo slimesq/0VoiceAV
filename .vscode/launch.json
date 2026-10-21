@@ -5,8 +5,8 @@
       "name": "Debug 0Voice AV",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_08_10_1_audio_resample.exe",
-      "args": ["out.pcm"],
+      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_09_01_encode_audio.exe",
+      "args": ["48000_2_f32le.pcm","out.aac","aac"],
       "cwd": "${workspaceFolder}/voice_av/test_files",
       "stopAtEntry": false,
       "console": "integratedTerminal"
