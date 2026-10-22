@@ -7,6 +7,7 @@
 #include <libavutil/channel_layout.h>
 #include <libavutil/frame.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/rational.h>
 #include <stdint.h>
 
 static AVFrame* alloc_out_frame(const int nb_samples,
@@ -93,14 +94,12 @@ audio_resampler_t* audio_resampler_alloc(const audio_resampler_params_t resample
     /*set options*/
     av_opt_set_sample_fmt(audio_resampler->swr_ctx, "in_sample_fmt",
                           audio_resampler->resampler_params.src_sample_fmt, 0);
-    av_opt_set_int(audio_resampler->swr_ctx, "in_channel_layout",
-                   audio_resampler->resampler_params.src_channel_layout, 0);
+    av_opt_set_chlayout(audio_resampler->swr_ctx, "in_chlayout", &(src_channel_layout), 0);
     av_opt_set_int(audio_resampler->swr_ctx, "in_sample_rate",
                    audio_resampler->resampler_params.src_sample_rate, 0);
     av_opt_set_sample_fmt(audio_resampler->swr_ctx, "out_sample_fmt",
                           audio_resampler->resampler_params.dst_sample_fmt, 0);
-    av_opt_set_int(audio_resampler->swr_ctx, "out_channel_layout",
-                   audio_resampler->resampler_params.dst_channel_layout, 0);
+    av_opt_set_chlayout(audio_resampler->swr_ctx, "out_chlayout", &dst_channel_layout, 0);
     av_opt_set_int(audio_resampler->swr_ctx, "out_sample_rate",
                    audio_resampler->resampler_params.dst_sample_rate, 0);
     /*initialize the resampling context*/
@@ -148,8 +147,10 @@ int audio_resampler_send_frame(audio_resampler_t* resampler, AVFrame* frame) {
         src_nb_samples = frame->nb_samples;  // 输入源采样数量
         src_data = frame->extended_data;     // 输入源采样buffer
         if (resampler->start_pts == AV_NOPTS_VALUE && resampler->cur_pts == AV_NOPTS_VALUE) {
-            resampler->start_pts = frame->pts;
-            resampler->cur_pts = frame->pts;
+            resampler->start_pts = av_rescale_q(
+                frame->pts, (AVRational){1, resampler->resampler_params.src_sample_rate},
+                (AVRational){1, resampler->resampler_params.dst_sample_rate});
+            resampler->cur_pts = resampler->start_pts;
         }
     } else {
         resampler->is_flushed = 1;
@@ -163,9 +164,9 @@ int audio_resampler_send_frame(audio_resampler_t* resampler, AVFrame* frame) {
     }
     // 计算这次做重采样能够获取到的重采样后的点数
     const int dst_nb_samples = av_rescale_rnd(
-        swr_get_delay(resampler->swr_ctx, resampler->resampler_params.dst_sample_rate) +
+        swr_get_delay(resampler->swr_ctx, resampler->resampler_params.src_sample_rate) +
             src_nb_samples,
-        resampler->resampler_params.src_sample_rate, resampler->resampler_params.dst_sample_rate,
+        resampler->resampler_params.dst_sample_rate, resampler->resampler_params.src_sample_rate,
         AV_ROUND_UP);
     if (dst_nb_samples > resampler->resampled_data_size) {
         // resampled data
@@ -180,7 +181,7 @@ int audio_resampler_send_frame(audio_resampler_t* resampler, AVFrame* frame) {
     // 返回实际写入的采样点数量
     int ret_size =
         av_audio_fifo_write(resampler->audio_fifo, (void**)resampler->resampled_data, nb_samples);
-    if (ret_size < dst_nb_samples) {
+    if (ret_size < nb_samples) {
         printf("Warn: av_audio_fifo_write failed,expected write:%d,actual write:%d\n", nb_samples,
                ret_size);
     }
@@ -205,8 +206,10 @@ int audio_resampler_send_frame2(audio_resampler_t* resampler, uint8_t** in_data,
         src_nb_samples = in_nb_samples;
         src_data = in_data;
         if (resampler->start_pts == AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE) {
-            resampler->start_pts = pts;
-            resampler->cur_pts = pts;
+            resampler->start_pts =
+                av_rescale_q(pts, (AVRational){1, resampler->resampler_params.src_sample_rate},
+                             (AVRational){1, resampler->resampler_params.dst_sample_rate});
+            resampler->cur_pts = resampler->start_pts;
         }
     } else {
         resampler->is_flushed = 1;
@@ -221,7 +224,7 @@ int audio_resampler_send_frame2(audio_resampler_t* resampler, uint8_t** in_data,
     const int dst_nb_samples = av_rescale_rnd(
         swr_get_delay(resampler->swr_ctx, resampler->resampler_params.src_sample_rate) +
             in_nb_samples,
-        resampler->resampler_params.src_sample_rate, resampler->resampler_params.dst_sample_rate,
+        resampler->resampler_params.dst_sample_rate, resampler->resampler_params.src_sample_rate,
         AV_ROUND_UP);
     if (dst_nb_samples > resampler->resampled_data_size) {
         // resampled data
@@ -267,7 +270,9 @@ int audio_resampler_receive_frame2(audio_resampler_t* resampler, uint8_t** out_d
     if (av_audio_fifo_size(resampler->audio_fifo) < nb_samples || nb_samples == 0) return 0;
     int ret = av_audio_fifo_read(resampler->audio_fifo, (void**)out_data, nb_samples);
     *pts = resampler->cur_pts;
-    resampler->cur_pts += nb_samples;
+    if (resampler->cur_pts != AV_NOPTS_VALUE) {
+        resampler->cur_pts += nb_samples;
+    }
     resampler->total_resampled_num += nb_samples;
     return ret;
 }
