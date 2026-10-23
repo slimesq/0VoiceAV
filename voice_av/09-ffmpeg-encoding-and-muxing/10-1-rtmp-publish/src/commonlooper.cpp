@@ -1,11 +1,11 @@
 #include "commonlooper.h"
 #include "dlog.h"
-void *CommonLooper::trampoline(void *p)
+void* CommonLooper::trampoline(void* p)
 {
     LogInfo("into");
     ((CommonLooper*)p)->SetRunning(true);
     ((CommonLooper*)p)->Loop();
-     ((CommonLooper*)p)->SetRunning(false);
+    ((CommonLooper*)p)->SetRunning(false);
     LogInfo("leave");
     return NULL;
 }
@@ -20,13 +20,17 @@ CommonLooper::~CommonLooper()
 RET_CODE CommonLooper::Start()
 {
     LogInfo("into");
-    if(this->worker_) {
+    if (this->worker_)
+    {
         return RET_FAIL;
     }
     this->request_abort_ = false;
-    try {
+    try
+    {
         this->worker_ = new std::thread{trampoline, this};
-    } catch(const std::exception &error) {
+    }
+    catch (std::exception const& error)
+    {
         LogError("Starting thread failed: %s", error.what());
         return RET_FAIL;
     }
@@ -36,8 +40,10 @@ RET_CODE CommonLooper::Start()
 void CommonLooper::Stop()
 {
     request_abort_ = true;
-    if(worker_) {
-        if(worker_->joinable()) {
+    if (worker_)
+    {
+        if (worker_->joinable())
+        {
             worker_->join();
         }
         delete worker_;
@@ -54,5 +60,3 @@ void CommonLooper::SetRunning(bool running)
 {
     running_ = running;
 }
-
-

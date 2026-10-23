@@ -2,59 +2,68 @@
 #include "dlog.h"
 H264Encoder::H264Encoder()
 {
-
 }
 
 H264Encoder::~H264Encoder()
 {
     av_dict_free(&dict_);
-    if(ctx_) {
+    if (ctx_)
+    {
         avcodec_free_context(&ctx_);
     }
-    if(frame_) {
+    if (frame_)
+    {
         av_frame_free(&frame_);
     }
 }
 
-int H264Encoder::Init(const Properties &properties)
+int H264Encoder::Init(Properties const& properties)
 {
     int ret = 0;
     width_ = properties.GetProperty("width", 0);
-    if(width_ ==0 || width_%2 != 0) {
+    if (width_ == 0 || width_ % 2 != 0)
+    {
         LogError("width:%d", width_);
         return RET_ERR_NOT_SUPPORT;
     }
 
     height_ = properties.GetProperty("height", 0);
-    if(height_ ==0 || height_%2 != 0) {
+    if (height_ == 0 || height_ % 2 != 0)
+    {
         LogError("height:%d", height_);
         return RET_ERR_NOT_SUPPORT;
     }
 
     fps_ = properties.GetProperty("fps", 25);
-    if(fps_ <= 0) {
+    if (fps_ <= 0)
+    {
         return RET_ERR_ARGUMENTOUTOFRANGE;
     }
     b_frames_ = properties.GetProperty("b_frames", 0);
-    bitrate_ = properties.GetProperty("bitrate", 500*1024);
+    bitrate_ = properties.GetProperty("bitrate", 500 * 1024);
     gop_ = properties.GetProperty("gop", fps_);
     pix_fmt_ = properties.GetProperty("pix_fmt", AV_PIX_FMT_YUV420P);
 
     codec_name_ = properties.GetProperty("codec_name", "default");
     // 查找H264编码器 确定是否存在
-    if(codec_name_ == "default") {
+    if (codec_name_ == "default")
+    {
         LogInfo("use default encoder");
         codec_ = avcodec_find_encoder(AV_CODEC_ID_H264);
-    } else {
+    }
+    else
+    {
         LogInfo("use %s encoder", codec_name_.c_str());
         codec_ = avcodec_find_encoder_by_name(codec_name_.c_str());
     }
-    if(!codec_) {
+    if (!codec_)
+    {
         LogError("can't find encoder");
         return RET_FAIL;
     }
     ctx_ = avcodec_alloc_context3(codec_);
-    if(!ctx_) {
+    if (!ctx_)
+    {
         LogError("ctx_ h264 avcodec_alloc_context3 failed");
         return RET_FAIL;
     }
@@ -67,11 +76,11 @@ int H264Encoder::Init(const Properties &properties)
     // gop
     ctx_->gop_size = gop_;
     // 帧率
-    ctx_->framerate.num = fps_;        // 分子
-    ctx_->framerate.den = 1;            // 分母
+    ctx_->framerate.num = fps_;  // 分子
+    ctx_->framerate.den = 1;     // 分母
     // time_base
-    ctx_->time_base.num = 1;            // 分子
-    ctx_->time_base.den = fps_;          // 分母
+    ctx_->time_base.num = 1;     // 分子
+    ctx_->time_base.den = fps_;  // 分母
 
     // 像素格式
     ctx_->pix_fmt = (AVPixelFormat)pix_fmt_;
@@ -89,42 +98,46 @@ int H264Encoder::Init(const Properties &properties)
     // 初始化音视频编码器
     ret = avcodec_open2(ctx_, codec_, &dict_);
     av_dict_free(&dict_);
-    if(ret < 0) {
-        char buf[1024] = { 0 };
+    if (ret < 0)
+    {
+        char buf[1024] = {0};
         av_strerror(ret, buf, sizeof(buf) - 1);
         LogError("avcodec_open2 failed:%s", buf);
         return RET_FAIL;
     }
 
     // 从extradata读取sps pps
-    if(ctx_->extradata && ctx_->extradata_size >= 8) {
+    if (ctx_->extradata && ctx_->extradata_size >= 8)
+    {
         LogInfo("extradata_size:%d", ctx_->extradata_size);
         // 第一个为sps 7
         // 第二个为pps 8
 
-        uint8_t *sps = ctx_->extradata + 4;    // 直接跳到数据
+        uint8_t* sps = ctx_->extradata + 4;  // 直接跳到数据
         int sps_len = 0;
-        uint8_t *pps = NULL;
+        uint8_t* pps = NULL;
         int pps_len = 0;
-        uint8_t *data = ctx_->extradata + 4;
+        uint8_t* data = ctx_->extradata + 4;
         for (int i = 0; i + 4 <= ctx_->extradata_size - 4; ++i)
         {
             if (0 == data[i] && 0 == data[i + 1] && 0 == data[i + 2] && 1 == data[i + 3])
             {
-                pps = &data[i+4];
+                pps = &data[i + 4];
                 break;
             }
         }
-        if(pps) {
+        if (pps)
+        {
             sps_len = static_cast<int>(pps - sps) - 4;
             pps_len = ctx_->extradata_size - 8 - sps_len;
-            sps_.assign(reinterpret_cast<const char *>(sps), static_cast<size_t>(sps_len));
-            pps_.assign(reinterpret_cast<const char *>(pps), static_cast<size_t>(pps_len));
+            sps_.assign(reinterpret_cast<char const*>(sps), static_cast<size_t>(sps_len));
+            pps_.assign(reinterpret_cast<char const*>(pps), static_cast<size_t>(pps_len));
         }
     }
 
     frame_ = av_frame_alloc();
-    if(!frame_) {
+    if (!frame_)
+    {
         return RET_ERR_OUTOFMEMORY;
     }
     frame_->width = width_;
@@ -134,74 +147,103 @@ int H264Encoder::Init(const Properties &properties)
     return ret < 0 ? RET_FAIL : RET_OK;
 }
 
-AVPacket *H264Encoder::Encode(uint8_t *yuv, int size, int64_t pts, int *pkt_frame,RET_CODE *ret)
+AVPacket* H264Encoder::Encode(uint8_t* yuv, int size, int64_t pts, int* pkt_frame, RET_CODE* ret)
 {
     int ret1 = 0;
     *ret = RET_OK;
     *pkt_frame = 0;
 
-    if(yuv) {
-        uint8_t *sourceData[4]{};
+    if (yuv)
+    {
+        uint8_t* sourceData[4]{};
         int sourceLinesize[4]{};
         int need_size = 0;
-        need_size = av_image_fill_arrays(sourceData, sourceLinesize, yuv,
+        need_size = av_image_fill_arrays(sourceData,
+                                         sourceLinesize,
+                                         yuv,
                                          (AVPixelFormat)frame_->format,
-                                         frame_->width, frame_->height, 1);
-        if(need_size != size)  {
+                                         frame_->width,
+                                         frame_->height,
+                                         1);
+        if (need_size != size)
+        {
             LogError("need_size:%d != size:%d", need_size, size);
             *ret = RET_FAIL;
             return NULL;
         }
-        if(av_frame_make_writable(frame_) < 0) {
+        if (av_frame_make_writable(frame_) < 0)
+        {
             *ret = RET_FAIL;
             return nullptr;
         }
-        const uint8_t *sourcePlanes[4]{sourceData[0], sourceData[1], sourceData[2], sourceData[3]};
-        av_image_copy(frame_->data, frame_->linesize, sourcePlanes, sourceLinesize,
-                      static_cast<AVPixelFormat>(frame_->format), frame_->width, frame_->height);
+        uint8_t const* sourcePlanes[4]{sourceData[0], sourceData[1], sourceData[2], sourceData[3]};
+        av_image_copy(frame_->data,
+                      frame_->linesize,
+                      sourcePlanes,
+                      sourceLinesize,
+                      static_cast<AVPixelFormat>(frame_->format),
+                      frame_->width,
+                      frame_->height);
         frame_->pts = av_rescale_q(pts, AVRational{1, 1000}, ctx_->time_base);
         frame_->pict_type = AV_PICTURE_TYPE_NONE;
         ret1 = avcodec_send_frame(ctx_, frame_);
-    } else {
+    }
+    else
+    {
         ret1 = avcodec_send_frame(ctx_, NULL);
     }
-    if(ret1 < 0) {  // <0 不能正常处理该frame
-        char buf[1024] = { 0 };
+    if (ret1 < 0)
+    {  // <0 不能正常处理该frame
+        char buf[1024] = {0};
         av_strerror(ret1, buf, sizeof(buf) - 1);
         LogError("avcodec_send_frame failed:%s", buf);
         *pkt_frame = 1;
-        if(ret1 == AVERROR(EAGAIN)) {       // 你赶紧读取packet，我frame send不进去了
+        if (ret1 == AVERROR(EAGAIN))
+        {  // 你赶紧读取packet，我frame send不进去了
             *ret = RET_ERR_EAGAIN;
             return NULL;
-        } else if(ret1 == AVERROR_EOF) {
+        }
+        else if (ret1 == AVERROR_EOF)
+        {
             *ret = RET_ERR_EOF;
             return NULL;
-        } else {
-            *ret = RET_FAIL;            // 真正报错，这个encoder就只能销毁了
+        }
+        else
+        {
+            *ret = RET_FAIL;  // 真正报错，这个encoder就只能销毁了
             return NULL;
         }
     }
-    AVPacket *packet = av_packet_alloc();
-    if(!packet) {
+    AVPacket* packet = av_packet_alloc();
+    if (!packet)
+    {
         *ret = RET_ERR_OUTOFMEMORY;
         return nullptr;
     }
     ret1 = avcodec_receive_packet(ctx_, packet);
-    if(ret1 < 0) {
+    if (ret1 < 0)
+    {
         LogError("AAC: avcodec_receive_packet ret:%d", ret1);
         av_packet_free(&packet);
         *pkt_frame = 0;
-        if(ret1 == AVERROR(EAGAIN)) {       // 需要继续发送frame我们才有packet读取
+        if (ret1 == AVERROR(EAGAIN))
+        {  // 需要继续发送frame我们才有packet读取
             *ret = RET_ERR_EAGAIN;
             return NULL;
-        }else if(ret1 == AVERROR_EOF) {
-            *ret = RET_ERR_EOF;             // 不能在读取出来packet来了
-            return NULL;
-        } else {
-            *ret = RET_FAIL;            // 真正报错，这个encoder就只能销毁了
+        }
+        else if (ret1 == AVERROR_EOF)
+        {
+            *ret = RET_ERR_EOF;  // 不能在读取出来packet来了
             return NULL;
         }
-    }else {
+        else
+        {
+            *ret = RET_FAIL;  // 真正报错，这个encoder就只能销毁了
+            return NULL;
+        }
+    }
+    else
+    {
         *ret = RET_OK;
         av_packet_rescale_ts(packet, ctx_->time_base, AVRational{1, 1000});
         return packet;

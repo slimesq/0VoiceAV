@@ -137,6 +137,16 @@ If clangd reports `STL1000: Unexpected compiler version`, update LLVM clangd
 to match your Visual Studio STL, or keep the provided `.clangd` setting that
 suppresses that editor-only version check.
 
+## 代码格式
+
+各机器统一使用 LLVM **18.1.6**，并将该版本的 `clangd` 加入 `PATH`。
+VS Code 安装工作区推荐的 clangd 插件；仓库已指定它作为 C/C++
+默认 formatter，保存时自动格式化，并关闭 C/C++ 插件的格式化功能。
+
+根目录 `.clang-format` 统一规定四空格缩进、100 列、左侧指针符号和大括号换行。
+源码使用 UTF-8 和 LF。
+clangd 使用自身内置的格式化引擎，因此各机器的 LLVM 版本也必须一致。
+
 ## Additional Build Commands
 
 The Quick Start covers Debug builds. Build Release on Windows:

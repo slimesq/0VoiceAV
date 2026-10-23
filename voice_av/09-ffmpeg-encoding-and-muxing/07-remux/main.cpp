@@ -1,7 +1,8 @@
 // 本程序主要解决一位学员将ts格式的H265转成MP4封装的H264格式。
 // 零声教育 Darren 音视频高级开发课程
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
@@ -15,35 +16,37 @@ extern "C" {
 }
 #endif
 
-typedef struct InputStream {
-    AVFormatContext *fmt_ctx;
-    AVStream *audio_stream;
-    AVStream *video_stream;
-    AVCodecContext *audio_dec_ctx;
-    AVCodecContext *video_dec_ctx;
-    AVPacket *packt;
-    AVFrame *frame;
-}InputStream;
+typedef struct InputStream
+{
+    AVFormatContext* fmt_ctx;
+    AVStream* audio_stream;
+    AVStream* video_stream;
+    AVCodecContext* audio_dec_ctx;
+    AVCodecContext* video_dec_ctx;
+    AVPacket* packt;
+    AVFrame* frame;
+} InputStream;
 
-typedef struct OutputStream {
-    AVFormatContext *fmt_ctx;
-    AVStream *audio_stream;
-    AVStream *video_stream;
-    AVCodecContext *audio_enc_ctx;
-    AVCodecContext *video_enc_ctx;
-    AVPacket *packt;
-    AVFrame *frame;
-    AVFrame *sws_frame;
-    struct SwsContext *sws_ctx;
+typedef struct OutputStream
+{
+    AVFormatContext* fmt_ctx;
+    AVStream* audio_stream;
+    AVStream* video_stream;
+    AVCodecContext* audio_enc_ctx;
+    AVCodecContext* video_enc_ctx;
+    AVPacket* packt;
+    AVFrame* frame;
+    AVFrame* sws_frame;
+    struct SwsContext* sws_ctx;
     int64_t audio_start_pts;
     int64_t video_start_pts;
-}OutputStream;
+} OutputStream;
 
-AVFrame *allocate_sws_frame(AVCodecContext *video_enc_ctx)
+AVFrame* allocate_sws_frame(AVCodecContext* video_enc_ctx)
 {
     int ret = 0;
-    AVFrame *sws_frame = av_frame_alloc();
-    if(sws_frame)
+    AVFrame* sws_frame = av_frame_alloc();
+    if (sws_frame)
     {
         sws_frame->format = video_enc_ctx->pix_fmt;
         sws_frame->width = video_enc_ctx->width;
@@ -51,8 +54,8 @@ AVFrame *allocate_sws_frame(AVCodecContext *video_enc_ctx)
         sws_frame->pict_type = AV_PICTURE_TYPE_NONE;
         //        ret = av_image_alloc(sws_frame->data, sws_frame->linesize, video_enc_ctx->width, video_enc_ctx->height, video_enc_ctx->pix_fmt, 32);
 
-        ret = av_frame_get_buffer(sws_frame, 32);   // 分配buffer
-        if(ret <0)
+        ret = av_frame_get_buffer(sws_frame, 32);  // 分配buffer
+        if (ret < 0)
         {
             av_frame_free(&sws_frame);
             return NULL;
@@ -61,24 +64,28 @@ AVFrame *allocate_sws_frame(AVCodecContext *video_enc_ctx)
     return sws_frame;
 }
 
-
-static int mux_send_pkt(OutputStream *output_stream, AVCodecContext *enc_ctx,
-                        AVStream *in_stream, AVStream *out_stream, AVPacket *pkt)
+static int mux_send_pkt(OutputStream* output_stream,
+                        AVCodecContext* enc_ctx,
+                        AVStream* in_stream,
+                        AVStream* out_stream,
+                        AVPacket* pkt)
 {
     int ret = 0;
 
-    printf("encode type:%d pts:%lld dts:%lld\n", enc_ctx->codec_type,  pkt->pts, pkt->dts);
+    printf("encode type:%d pts:%lld dts:%lld\n", enc_ctx->codec_type, pkt->pts, pkt->dts);
 
     /* rescale output packet timestamp values from codec to stream timebase */
     if (pkt->duration <= 0 && enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
         pkt->duration = av_rescale_q(1, av_inv_q(enc_ctx->framerate), enc_ctx->time_base);
     av_packet_rescale_ts(pkt, enc_ctx->time_base, out_stream->time_base);
 
-
     pkt->stream_index = out_stream->index;
-    if(pkt)
-        printf("enc_ctx type  :%d, pts:%lf, pts:%lld dts:%lld\n",  enc_ctx->codec_type, pkt->pts * av_q2d(out_stream->time_base), pkt->pts, pkt->dts);
-
+    if (pkt)
+        printf("enc_ctx type  :%d, pts:%lf, pts:%lld dts:%lld\n",
+               enc_ctx->codec_type,
+               pkt->pts * av_q2d(out_stream->time_base),
+               pkt->pts,
+               pkt->dts);
 
     //    printf("rescale_ts :%d pts:%lld dts:%lld\n", enc_ctx->codec_type,  pkt->pts, pkt->dts);
     ret = av_interleaved_write_frame(output_stream->fmt_ctx, pkt);
@@ -90,26 +97,29 @@ static int mux_send_pkt(OutputStream *output_stream, AVCodecContext *enc_ctx,
     return ret;
 }
 
-static int decode_and_encode_frame(InputStream *input_stream, OutputStream *output_stream, AVMediaType type,  AVPacket *pkt)
+static int decode_and_encode_frame(InputStream* input_stream,
+                                   OutputStream* output_stream,
+                                   AVMediaType type,
+                                   AVPacket* pkt)
 {
     int ret = 0;
-    AVCodecContext *dec_ctx = NULL;
-    AVCodecContext *enc_ctx = NULL;
-    AVStream *in_st = NULL;
-    AVStream *out_st = NULL;
+    AVCodecContext* dec_ctx = NULL;
+    AVCodecContext* enc_ctx = NULL;
+    AVStream* in_st = NULL;
+    AVStream* out_st = NULL;
     int64_t start_pts = AV_NOPTS_VALUE;
-    AVFrame *dec_frame = input_stream->frame;
-    AVFrame *enc_frame = output_stream->frame;
-    AVPacket *enc_pkt = output_stream->packt;
-    struct SwsContext *sws_ctx = NULL;
-    if(type == AVMEDIA_TYPE_AUDIO)
+    AVFrame* dec_frame = input_stream->frame;
+    AVFrame* enc_frame = output_stream->frame;
+    AVPacket* enc_pkt = output_stream->packt;
+    struct SwsContext* sws_ctx = NULL;
+    if (type == AVMEDIA_TYPE_AUDIO)
     {
         dec_ctx = input_stream->audio_dec_ctx;
         enc_ctx = output_stream->audio_enc_ctx;
         in_st = input_stream->audio_stream;
         out_st = output_stream->audio_stream;
     }
-    else if(type == AVMEDIA_TYPE_VIDEO)
+    else if (type == AVMEDIA_TYPE_VIDEO)
     {
         dec_ctx = input_stream->video_dec_ctx;
         enc_ctx = output_stream->video_enc_ctx;
@@ -123,16 +133,19 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
         return -1;
     }
 
-
     ret = avcodec_send_packet(dec_ctx, pkt);
-    if(pkt)
-        printf("read type  :%d, pts:%lf, pts:%lld dts:%lld\n",  dec_ctx->codec_type, pkt->pts * av_q2d(in_st->time_base), pkt->pts, pkt->dts);
-    if(ret < 0)
+    if (pkt)
+        printf("read type  :%d, pts:%lf, pts:%lld dts:%lld\n",
+               dec_ctx->codec_type,
+               pkt->pts * av_q2d(in_st->time_base),
+               pkt->pts,
+               pkt->dts);
+    if (ret < 0)
     {
         printf("avcodec_send_packet failed:%d\n", ret);
         return ret;
     }
-    char err_str[256] = { 0 };
+    char err_str[256] = {0};
 
     while (ret >= 0)  // 读取解码，直到没有解码帧可以获取
     {
@@ -142,7 +155,7 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
             ret = 0;
             break;
         }
-        else if(ret == AVERROR_EOF)
+        else if (ret == AVERROR_EOF)
         {
             printf("avcodec_receive_frame EOF\n");
         }
@@ -157,30 +170,41 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
             //            av_strerror(ret, err_str, sizeof(err_str));
             //            printf("ret:%s, decode type:%d pts:%lld\n", err_str, dec_ctx->codec_type, dec_frame->pts);
         }
-        dec_frame->pts = av_rescale_q(dec_frame->best_effort_timestamp, in_st->time_base, enc_ctx->time_base);
+        dec_frame->pts =
+            av_rescale_q(dec_frame->best_effort_timestamp, in_st->time_base, enc_ctx->time_base);
         //        if(dec_frame->buf[0])        // 打印referenc-counted，必须保证传入的是有效指针
         //        {    printf("%s(%d) ref_count(pkt) = %d, has_b_frames:%d\n", __FUNCTION__, __LINE__,
         //                    av_buffer_get_ref_count(dec_frame->buf[0]), dec_ctx->has_b_frames);
         //        }
-        if(ret != AVERROR_EOF)
+        if (ret != AVERROR_EOF)
         {
-
-            if(sws_ctx && enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+            if (sws_ctx && enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
             {
 #if 1
-                AVFrame *sws_frame = output_stream->sws_frame;
+                AVFrame* sws_frame = output_stream->sws_frame;
                 /* make sure the frame data is writable */
                 ret = av_frame_make_writable(sws_frame);
-                ret = sws_scale(sws_ctx, (const uint8_t **) dec_frame->data, dec_frame->linesize, 0, dec_frame->height,
-                                sws_frame->data, sws_frame->linesize);
+                ret = sws_scale(sws_ctx,
+                                (uint8_t const**)dec_frame->data,
+                                dec_frame->linesize,
+                                0,
+                                dec_frame->height,
+                                sws_frame->data,
+                                sws_frame->linesize);
                 sws_frame->pts = dec_frame->pts;
                 sws_frame->pkt_dts = dec_frame->pkt_dts;
-                printf("sws_frame  pts:%lf, pts:%lld dts:%lld\n",  sws_frame->pts * av_q2d(in_st->time_base), sws_frame->pts, sws_frame->pkt_dts);
+                printf("sws_frame  pts:%lf, pts:%lld dts:%lld\n",
+                       sws_frame->pts * av_q2d(in_st->time_base),
+                       sws_frame->pts,
+                       sws_frame->pkt_dts);
 
                 ret = avcodec_send_frame(enc_ctx, sws_frame);
-                if(sws_frame->buf)        // 打印referenc-counted，必须保证传入的是有效指针
-                {    printf("%s(%d) ref_count(pkt) = %d\n", __FUNCTION__, __LINE__,
-                            av_buffer_get_ref_count(sws_frame->buf[0]));
+                if (sws_frame->buf)  // 打印referenc-counted，必须保证传入的是有效指针
+                {
+                    printf("%s(%d) ref_count(pkt) = %d\n",
+                           __FUNCTION__,
+                           __LINE__,
+                           av_buffer_get_ref_count(sws_frame->buf[0]));
                 }
                 //                if(dec_frame->buf[0])        // 打印referenc-counted，必须保证传入的是有效指针
                 //                {    printf("%s(%d) ref_count(pkt) = %d\n", __FUNCTION__, __LINE__,
@@ -197,7 +221,7 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
             }
             else
             {
-                av_frame_move_ref(enc_frame, dec_frame);    // 正确的
+                av_frame_move_ref(enc_frame, dec_frame);  // 正确的
                 enc_frame->pict_type = AV_PICTURE_TYPE_NONE;
                 ret = avcodec_send_frame(enc_ctx, enc_frame);
             }
@@ -207,18 +231,18 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
             printf("flush encoder\n");
             ret = avcodec_send_frame(enc_ctx, NULL);
         }
-        av_frame_unref(enc_frame);      // 释放引用计数
+        av_frame_unref(enc_frame);  // 释放引用计数
         while (1)
         {
             // 循环读取packet写封装
             ret = avcodec_receive_packet(enc_ctx, enc_pkt);
-            if (ret == AVERROR(EAGAIN))         // 没有可以读取的packet
+            if (ret == AVERROR(EAGAIN))  // 没有可以读取的packet
             {
                 //                printf("avcodec_receive_packet EAGAIN\n");
                 ret = 0;
                 break;
             }
-            else if(ret == AVERROR_EOF)     // 全部读取完毕了
+            else if (ret == AVERROR_EOF)  // 全部读取完毕了
             {
                 printf("avcodec_receive_packet AVERROR_EOF\n");
                 return 0;
@@ -229,7 +253,7 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
                 return ret;
             }
             ret = mux_send_pkt(output_stream, enc_ctx, in_st, out_st, enc_pkt);
-            if(ret < 0)
+            if (ret < 0)
             {
                 printf("mux_send_pkt failed\n");
                 return ret;
@@ -237,25 +261,25 @@ static int decode_and_encode_frame(InputStream *input_stream, OutputStream *outp
             // 写入数据
             av_packet_unref(enc_pkt);
         }
-
     }
     return ret;
 }
 
-
-static int open_decodec_context(int *stream_idx,
-                                AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type)
+static int open_decodec_context(int* stream_idx,
+                                AVCodecContext** dec_ctx,
+                                AVFormatContext* fmt_ctx,
+                                enum AVMediaType type)
 {
     int ret, stream_index;
-    AVStream *st;
-    const AVCodec *dec = NULL;
-    AVDictionary *opts = NULL;
+    AVStream* st;
+    AVCodec const* dec = NULL;
+    AVDictionary* opts = NULL;
 
     ret = av_find_best_stream(fmt_ctx, type, -1, -1, &dec, 0);
     if (ret < 0)
     {
-        fprintf(stderr, "Could not find %s stream in input file \n",
-                av_get_media_type_string(type));
+        fprintf(
+            stderr, "Could not find %s stream in input file \n", av_get_media_type_string(type));
         return ret;
     }
     else
@@ -267,7 +291,8 @@ static int open_decodec_context(int *stream_idx,
         *dec_ctx = avcodec_alloc_context3(dec);
         if (!*dec_ctx)
         {
-            fprintf(stderr, "Failed to allocate the %s codec context\n",
+            fprintf(stderr,
+                    "Failed to allocate the %s codec context\n",
                     av_get_media_type_string(type));
             return AVERROR(ENOMEM);
         }
@@ -275,7 +300,8 @@ static int open_decodec_context(int *stream_idx,
         /* Copy codec parameters from input stream to output codec context */
         if ((ret = avcodec_parameters_to_context(*dec_ctx, st->codecpar)) < 0)
         {
-            fprintf(stderr, "Failed to copy %s codec parameters to decoder context\n",
+            fprintf(stderr,
+                    "Failed to copy %s codec parameters to decoder context\n",
                     av_get_media_type_string(type));
             return ret;
         }
@@ -287,8 +313,7 @@ static int open_decodec_context(int *stream_idx,
         av_dict_set_int(&opts, "refcounted_frames", 1, 0);
         if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0)
         {
-            fprintf(stderr, "Failed to open %s codec\n",
-                    av_get_media_type_string(type));
+            fprintf(stderr, "Failed to open %s codec\n", av_get_media_type_string(type));
             return ret;
         }
         (*dec_ctx)->pkt_timebase = st->time_base;
@@ -298,23 +323,25 @@ static int open_decodec_context(int *stream_idx,
     return 0;
 }
 
-
-
-static int open_encodec_context(int stream_index, AVCodecContext **oenc_ctx,
-                                AVCodecContext *dec_ctx, AVFormatContext *ofmt_ctx, enum AVMediaType type,
-                                struct SwsContext **sws_ctx)
+static int open_encodec_context(int stream_index,
+                                AVCodecContext** oenc_ctx,
+                                AVCodecContext* dec_ctx,
+                                AVFormatContext* ofmt_ctx,
+                                enum AVMediaType type,
+                                struct SwsContext** sws_ctx)
 {
     int ret;
-    AVStream *st;
-    const AVCodec *encoder = NULL;
-    AVDictionary *opts = NULL;
-    AVCodecContext *enc_ctx;
+    AVStream* st;
+    AVCodec const* encoder = NULL;
+    AVDictionary* opts = NULL;
+    AVCodecContext* enc_ctx;
 
-    AVDictionary *param = NULL;
+    AVDictionary* param = NULL;
     if (type == AVMEDIA_TYPE_VIDEO)
-    {/* find encoder for the stream */
+    { /* find encoder for the stream */
         encoder = avcodec_find_encoder(AV_CODEC_ID_H264);
-        if (!encoder) {
+        if (!encoder)
+        {
             av_log(NULL, AV_LOG_FATAL, "Necessary encoder not found\n");
             return AVERROR_INVALIDDATA;
         }
@@ -332,26 +359,41 @@ static int open_encodec_context(int stream_index, AVCodecContext **oenc_ctx,
         enc_ctx->framerate = dec_ctx->framerate;
 
         // 先判断编码器支持的像素格式是否和要解码的像素格式一致
-        enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P ;  // 可以用来指定像素格式进行测试 AV_PIX_FMT_YUVJ420P  AV_PIX_FMT_YUV420P
-        if(enc_ctx->pix_fmt != dec_ctx->pix_fmt)
+        enc_ctx->pix_fmt =
+            AV_PIX_FMT_YUV420P;  // 可以用来指定像素格式进行测试 AV_PIX_FMT_YUVJ420P  AV_PIX_FMT_YUV420P
+        if (enc_ctx->pix_fmt != dec_ctx->pix_fmt)
         {
             /* create scaling context */
-            *sws_ctx = sws_getContext(dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
-                                      enc_ctx->width, enc_ctx->height, enc_ctx->pix_fmt,
-                                      SWS_BILINEAR, NULL, NULL, NULL);
-            if (!(*sws_ctx)) {
-                printf("Impossible to create scale context for the conversion fmt:%s s:%dx%d -> fmt:%s s:%dx%d\n",
-                       av_get_pix_fmt_name(dec_ctx->pix_fmt), dec_ctx->width, dec_ctx->height,
-                       av_get_pix_fmt_name(enc_ctx->pix_fmt), enc_ctx->width, enc_ctx->height);
+            *sws_ctx = sws_getContext(dec_ctx->width,
+                                      dec_ctx->height,
+                                      dec_ctx->pix_fmt,
+                                      enc_ctx->width,
+                                      enc_ctx->height,
+                                      enc_ctx->pix_fmt,
+                                      SWS_BILINEAR,
+                                      NULL,
+                                      NULL,
+                                      NULL);
+            if (!(*sws_ctx))
+            {
+                printf(
+                    "Impossible to create scale context for the conversion fmt:%s s:%dx%d -> "
+                    "fmt:%s s:%dx%d\n",
+                    av_get_pix_fmt_name(dec_ctx->pix_fmt),
+                    dec_ctx->width,
+                    dec_ctx->height,
+                    av_get_pix_fmt_name(enc_ctx->pix_fmt),
+                    enc_ctx->width,
+                    enc_ctx->height);
                 return -1;
             }
         }
 
         /* video time_base can be set to whatever is handy and supported by encoder */
-        enc_ctx->time_base =av_inv_q(dec_ctx->framerate);// {1, 1000};
+        enc_ctx->time_base = av_inv_q(dec_ctx->framerate);  // {1, 1000};
 
-        enc_ctx->gop_size = dec_ctx->gop_size;      // 可以自己设置gop
-        enc_ctx->max_b_frames = 0;                  // 可以自己设置是否含有b帧
+        enc_ctx->gop_size = dec_ctx->gop_size;  // 可以自己设置gop
+        enc_ctx->max_b_frames = 0;              // 可以自己设置是否含有b帧
         //        av_dict_set(&param, "preset", "ultrafast", 0);
         //        av_dict_set(&param, "tune", "zerolatency", 0); // 控制编码输出延迟
     }
@@ -359,12 +401,14 @@ static int open_encodec_context(int stream_index, AVCodecContext **oenc_ctx,
     {
         /* find encoder for the stream */
         encoder = avcodec_find_encoder(dec_ctx->codec_id);
-        if (!encoder) {
-            printf( "Necessary encoder not found\n");
+        if (!encoder)
+        {
+            printf("Necessary encoder not found\n");
             return AVERROR_INVALIDDATA;
         }
         enc_ctx = avcodec_alloc_context3(encoder);
-        if(!enc_ctx) {
+        if (!enc_ctx)
+        {
             printf("avcodec_alloc_context3 AV_CODEC_ID_AAC failed\n");
             return -1;
         }
@@ -375,7 +419,8 @@ static int open_encodec_context(int stream_index, AVCodecContext **oenc_ctx,
         enc_ctx->sample_rate = dec_ctx->sample_rate;
         enc_ctx->sample_fmt = dec_ctx->sample_fmt;
         ret = av_channel_layout_copy(&enc_ctx->ch_layout, &dec_ctx->ch_layout);
-        if (ret < 0) {
+        if (ret < 0)
+        {
             avcodec_free_context(&enc_ctx);
             return ret;
         }
@@ -388,8 +433,7 @@ static int open_encodec_context(int stream_index, AVCodecContext **oenc_ctx,
 
     if ((ret = avcodec_open2(enc_ctx, encoder, &param)) < 0)
     {
-        fprintf(stderr, "Failed to open %s codec\n",
-                av_get_media_type_string(type));
+        fprintf(stderr, "Failed to open %s codec\n", av_get_media_type_string(type));
         return ret;
     }
 
@@ -397,7 +441,7 @@ static int open_encodec_context(int stream_index, AVCodecContext **oenc_ctx,
     return 0;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     int ret = 0;
     int stream_index = -1;
@@ -406,8 +450,8 @@ int main(int argc, char **argv)
         printf("Usage: %s input output \n", argv[0]);
         return 1;
     }
-    char *input_file = argv[1];
-    char *output_file = argv[2];
+    char* input_file = argv[1];
+    char* output_file = argv[2];
 
     InputStream input_stream;
     memset(&input_stream, 0, sizeof(InputStream));
@@ -416,25 +460,24 @@ int main(int argc, char **argv)
     memset(&output_stream, 0, sizeof(OutputStream));
 
     // 输入流
-    AVFormatContext *ifmt_ctx = NULL;
-    AVCodecContext *video_dec_ctx = NULL;
-    AVCodecContext *audio_dec_ctx = NULL;
+    AVFormatContext* ifmt_ctx = NULL;
+    AVCodecContext* video_dec_ctx = NULL;
+    AVCodecContext* audio_dec_ctx = NULL;
     int video_stream_idx = -1;
     int audio_stream_idx = -1;
-    AVPacket *pkt = NULL;
+    AVPacket* pkt = NULL;
 
     // 输出流
-    AVFormatContext *ofmt_ctx = NULL;
-    AVCodecContext *audio_enc_ctx = NULL;
-    AVCodecContext *video_enc_ctx = NULL;
-    struct SwsContext *sws_ctx = NULL;  // 当解码器和编码器像素格式不一致时需要做scale
-    AVStream *out_video_stream = NULL;
-    AVStream *out_auido_stream = NULL;
-    AVFrame *dec_frame = NULL;
-    AVFrame *enc_frame = NULL;
-    AVPacket *enc_pkt = NULL;
-    AVFrame *dst_frame = NULL;
-
+    AVFormatContext* ofmt_ctx = NULL;
+    AVCodecContext* audio_enc_ctx = NULL;
+    AVCodecContext* video_enc_ctx = NULL;
+    struct SwsContext* sws_ctx = NULL;  // 当解码器和编码器像素格式不一致时需要做scale
+    AVStream* out_video_stream = NULL;
+    AVStream* out_auido_stream = NULL;
+    AVFrame* dec_frame = NULL;
+    AVFrame* enc_frame = NULL;
+    AVPacket* enc_pkt = NULL;
+    AVFrame* dst_frame = NULL;
 
     if ((ret = avformat_open_input(&ifmt_ctx, input_file, 0, 0)) < 0)
     {
@@ -449,7 +492,8 @@ int main(int argc, char **argv)
     }
     input_stream.fmt_ctx = ifmt_ctx;
 
-    if ((ret = open_decodec_context(&video_stream_idx, &video_dec_ctx, ifmt_ctx, AVMEDIA_TYPE_VIDEO)) < 0)
+    if ((ret = open_decodec_context(
+             &video_stream_idx, &video_dec_ctx, ifmt_ctx, AVMEDIA_TYPE_VIDEO)) < 0)
     {
         printf("fail to open vedio decode context, ret:%d\n", ret);
         goto end;
@@ -457,7 +501,8 @@ int main(int argc, char **argv)
     input_stream.video_dec_ctx = video_dec_ctx;
     input_stream.video_stream = ifmt_ctx->streams[video_stream_idx];
 
-    if ((ret = open_decodec_context(&audio_stream_idx, &audio_dec_ctx, ifmt_ctx, AVMEDIA_TYPE_AUDIO)) < 0)
+    if ((ret = open_decodec_context(
+             &audio_stream_idx, &audio_dec_ctx, ifmt_ctx, AVMEDIA_TYPE_AUDIO)) < 0)
     {
         printf("fail to open audio decode context, ret:%d\n", ret);
         goto end;
@@ -477,9 +522,14 @@ int main(int argc, char **argv)
     }
     output_stream.fmt_ctx = ofmt_ctx;
 
-    if ((ret = open_encodec_context(video_stream_idx, &video_enc_ctx, video_dec_ctx,ofmt_ctx, AVMEDIA_TYPE_VIDEO, &sws_ctx)) < 0)
+    if ((ret = open_encodec_context(video_stream_idx,
+                                    &video_enc_ctx,
+                                    video_dec_ctx,
+                                    ofmt_ctx,
+                                    AVMEDIA_TYPE_VIDEO,
+                                    &sws_ctx)) < 0)
     {
-        char errStr[256] = { 0 };
+        char errStr[256] = {0};
         av_strerror(ret, errStr, sizeof(errStr));
         printf("video enc ctx init err:%sn", errStr);
         goto end;
@@ -514,7 +564,9 @@ int main(int argc, char **argv)
     }
     output_stream.audio_stream = out_auido_stream;
 
-    if ((ret = open_encodec_context(audio_stream_idx, &audio_enc_ctx, audio_dec_ctx, ofmt_ctx, AVMEDIA_TYPE_AUDIO, NULL)) < 0)
+    if ((ret = open_encodec_context(
+             audio_stream_idx, &audio_enc_ctx, audio_dec_ctx, ofmt_ctx, AVMEDIA_TYPE_AUDIO, NULL)) <
+        0)
     {
         printf("audio enc ctx init err\n");
         goto end;
@@ -550,18 +602,16 @@ int main(int argc, char **argv)
         goto end;
     }
 
-
     dst_frame = av_frame_alloc();
-    if(!dst_frame)
+    if (!dst_frame)
     {
         printf("av_frame_alloc dst_frame failed\n");
         ret = AVERROR(ENOMEM);
         goto end;
     }
 
-
     pkt = av_packet_alloc();
-    if(!pkt)
+    if (!pkt)
     {
         printf("av_packet_alloc pkt failed\n");
         ret = AVERROR(ENOMEM);
@@ -569,7 +619,7 @@ int main(int argc, char **argv)
     }
 
     dec_frame = av_frame_alloc();
-    if(!dec_frame)
+    if (!dec_frame)
     {
         printf("av_frame_alloc dec_frame failed\n");
         ret = AVERROR(ENOMEM);
@@ -577,7 +627,7 @@ int main(int argc, char **argv)
     }
 
     enc_pkt = av_packet_alloc();
-    if(!enc_pkt)
+    if (!enc_pkt)
     {
         printf("av_packet_alloc enc_pkt failed\n");
         ret = AVERROR(ENOMEM);
@@ -585,7 +635,7 @@ int main(int argc, char **argv)
     }
 
     enc_frame = av_frame_alloc();
-    if(!enc_frame)
+    if (!enc_frame)
     {
         printf("av_frame_alloc enc_frame failed\n");
         ret = AVERROR(ENOMEM);
@@ -596,29 +646,34 @@ int main(int argc, char **argv)
     output_stream.packt = enc_pkt;
     output_stream.frame = enc_frame;
 
-    if(ifmt_ctx->start_time != AV_NOPTS_VALUE) {
-        if(audio_stream_idx >= 0)
-            output_stream.audio_start_pts = av_rescale_q(ifmt_ctx->start_time,
-                                                         AV_TIME_BASE_Q,
-                                                         ifmt_ctx->streams[audio_stream_idx]->time_base);
-        if(video_stream_idx >= 0)
-            output_stream.video_start_pts = av_rescale_q(ifmt_ctx->start_time,
-                                                         AV_TIME_BASE_Q,
-                                                         ifmt_ctx->streams[video_stream_idx]->time_base);
-    }else{
+    if (ifmt_ctx->start_time != AV_NOPTS_VALUE)
+    {
+        if (audio_stream_idx >= 0)
+            output_stream.audio_start_pts =
+                av_rescale_q(ifmt_ctx->start_time,
+                             AV_TIME_BASE_Q,
+                             ifmt_ctx->streams[audio_stream_idx]->time_base);
+        if (video_stream_idx >= 0)
+            output_stream.video_start_pts =
+                av_rescale_q(ifmt_ctx->start_time,
+                             AV_TIME_BASE_Q,
+                             ifmt_ctx->streams[video_stream_idx]->time_base);
+    }
+    else
+    {
         output_stream.audio_start_pts = 0;
         output_stream.video_start_pts = 0;
     }
 
-    if(output_stream.sws_ctx)
+    if (output_stream.sws_ctx)
     {
         output_stream.sws_frame = allocate_sws_frame(video_enc_ctx);
-        if (!output_stream.sws_frame) {
+        if (!output_stream.sws_frame)
+        {
             ret = AVERROR(ENOMEM);
             goto end;
         }
     }
-
 
     while (1)
     {
@@ -636,7 +691,7 @@ int main(int argc, char **argv)
             if (pkt->dts != AV_NOPTS_VALUE)
                 pkt->dts -= output_stream.video_start_pts;
             ret = decode_and_encode_frame(&input_stream, &output_stream, AVMEDIA_TYPE_VIDEO, pkt);
-            if(ret < 0)
+            if (ret < 0)
             {
                 printf("decode_and_encode_frame video failed\n");
                 goto end;
@@ -650,14 +705,14 @@ int main(int argc, char **argv)
             if (pkt->dts != AV_NOPTS_VALUE)
                 pkt->dts -= output_stream.audio_start_pts;
             ret = decode_and_encode_frame(&input_stream, &output_stream, AVMEDIA_TYPE_AUDIO, pkt);
-            if(ret < 0)
+            if (ret < 0)
             {
                 printf("decode_and_encode_frame audio failed\n");
                 goto end;
             }
         }
 #endif
-        av_packet_unref(pkt);       // 释放内存
+        av_packet_unref(pkt);  // 释放内存
     }
     if (ret != AVERROR_EOF)
         goto end;
@@ -665,14 +720,14 @@ int main(int argc, char **argv)
     // fflush encode
     printf("flush video ........\n");
     ret = decode_and_encode_frame(&input_stream, &output_stream, AVMEDIA_TYPE_VIDEO, NULL);
-    if(ret < 0)
+    if (ret < 0)
     {
         printf("decode_and_encode_frame video failed\n");
         goto end;
     }
     printf("flush audio ........\n");
     ret = decode_and_encode_frame(&input_stream, &output_stream, AVMEDIA_TYPE_AUDIO, NULL);
-    if(ret < 0)
+    if (ret < 0)
     {
         printf("decode_and_encode_frame audio failed\n");
         goto end;
@@ -687,25 +742,26 @@ end:
         avio_closep(&ofmt_ctx->pb);
     avformat_free_context(ofmt_ctx);
 
-    if(video_dec_ctx)
+    if (video_dec_ctx)
         avcodec_free_context(&video_dec_ctx);
-    if(audio_dec_ctx)
+    if (audio_dec_ctx)
         avcodec_free_context(&audio_dec_ctx);
-    if(sws_ctx)
+    if (sws_ctx)
         sws_freeContext(sws_ctx);
 
-    if(dst_frame)
+    if (dst_frame)
         av_frame_free(&dst_frame);
 
-    if(pkt)
+    if (pkt)
         av_packet_free(&pkt);
-    if(enc_pkt)
+    if (enc_pkt)
         av_packet_free(&enc_pkt);
-    if(dec_frame)
+    if (dec_frame)
         av_frame_free(&dec_frame);
-    if(enc_frame)
+    if (enc_frame)
         av_frame_free(&enc_frame);
-    if(output_stream.sws_frame) {
+    if (output_stream.sws_frame)
+    {
         av_frame_free(&output_stream.sws_frame);
     }
     printf("main finish\n");

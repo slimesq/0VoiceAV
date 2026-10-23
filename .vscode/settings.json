@@ -1,3 +1,24 @@
 {
-    "pdf-preview.reload.automatic": true
+    "pdf-preview.reload.automatic": true,
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "clangd.path": "clangd",
+    "clangd.checkUpdates": false,
+    "C_Cpp.formatting": "disabled",
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "file",
+        "editor.detectIndentation": false,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "file",
+        "editor.detectIndentation": false,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    }
 }
