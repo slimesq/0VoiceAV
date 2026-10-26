@@ -5,8 +5,8 @@
       "name": "Debug 0Voice AV",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_09_01_encode_audio.exe",
-      "args": ["48000_2_f32le.pcm","out.aac","aac"],
+      "program": "${workspaceFolder}/build/cmake/Debug/voice_av_09_02_encode_video.exe",
+      "args": ["yuv420p_1280x720.yuv", "yuv420p_1280x720.h264", "libx264"],
       "cwd": "${workspaceFolder}/voice_av/test_files",
       "stopAtEntry": false,
       "console": "integratedTerminal"
