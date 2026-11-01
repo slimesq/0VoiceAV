@@ -19,6 +19,8 @@ voice_av/
 - `08-ffmpeg-demuxing-and-decoding`: demuxing and decoding examples.
 - `09-ffmpeg-encoding-and-muxing`: encoding, muxing, transcoding, image extraction,
   watermarking, and RTMP publishing examples.
+- [10-ffmpeg-filtering](10-ffmpeg-filtering/README.md): video filter graphs, audio
+  mixing, crop/flip, JPEG watermarking, and video logo examples.
 
 ## Add an Example
 

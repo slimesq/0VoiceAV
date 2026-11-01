@@ -1,0 +1,2 @@
+09-03-audio-mix
+上课演示修改采样率不成功是因为 要系统时间出现了冲突，把build-09-03-audio-mix-Desktop_Qt_5_10_1_MinGW_32bit-Debug里面内容删除掉重新再编译就正常了。

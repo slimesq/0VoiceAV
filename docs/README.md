@@ -18,6 +18,11 @@ or troubleshooting material here.
   rules, and steps for adding a new example.
 - [Test Files](../voice_av/test_files/README.md): local media file names and
   where to place sample inputs and generated outputs.
+- [Chapter 10 Filter Lectures](lecture_notes/10-ffmpeg-filtering/README.md): original
+  PDFs and diagrams, with a source-to-example map and run instructions.
+- [Chapter 43 Supplement](lecture_notes/43-ffmpeg-hevc-hwaccel-and-mixing/README.md):
+  HEVC bitstreams, software encoding, NVENC, hardware decoding, and audio mixing
+  lectures that build on chapters 08, 09, and 10.
 
 ## Maintenance
 

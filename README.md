@@ -176,6 +176,8 @@ Examples live under [voice_av](voice_av).
 - `voice_av/08-ffmpeg-demuxing-and-decoding`: demuxing and decoding examples.
 - `voice_av/09-ffmpeg-encoding-and-muxing`: encoding, muxing, transcoding, image extraction,
   watermarking, and RTMP publishing examples.
+- [voice_av/10-ffmpeg-filtering](voice_av/10-ffmpeg-filtering/README.md): filter graphs,
+  audio mixing, crop/flip, JPEG watermarking, and video logo examples.
 
 Build the current group 08 targets:
 
@@ -211,3 +213,5 @@ See [Voice AV Examples](voice_av/README.md) for the steps to add a new example.
 
 - [docs/README.md](docs/README.md): documentation index.
 - [docs/ffmpeg-dependency.md](docs/ffmpeg-dependency.md): FFmpeg dependency notes.
+- [Chapter 10 lecture notes](docs/lecture_notes/10-ffmpeg-filtering/README.md): original
+  filter lectures and diagrams, with links to the migrated examples.

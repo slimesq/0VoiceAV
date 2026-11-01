@@ -22,8 +22,6 @@
 #include <libavutil/samplefmt.h>
 #include <stdint.h>
 
-#include <cstdio>
-#include <sstream>
 #define _USE_MATH_DEFINES
 #include <errno.h>
 #include <libavcodec/avcodec.h>
@@ -370,7 +368,7 @@ static AVFrame* get_audio_frame(OutputStream* ost)
         ost->tincr += ost->tincr2;
     }
 
-    frame->pts = ost->next_pts;  // 使用samples作为计数 设置pst 0, nb_samples(1024) 2048
+    frame->pts = ost->next_pts;          // 使用samples作为计数 设置pst 0, nb_samples(1024) 2048
     ost->next_pts += frame->nb_samples;  // 音频PTS使用采样率samples叠加
 
     return frame;
@@ -501,7 +499,7 @@ static void open_video(AVFormatContext* oc,
     int ret;
     AVCodecContext* codec_ctx = ost->enc;
 
-    AVDictionary* opt;
+    AVDictionary* opt = NULL;
     av_dict_copy(&opt, opt_arg, 0);
 
     /* open the codec*/
@@ -517,7 +515,7 @@ static void open_video(AVFormatContext* oc,
     // 2. 分配帧buffer
     /* allocate and init a re-usable frame*/
     ost->frame = alloc_picture(codec_ctx->pix_fmt, codec_ctx->width, codec_ctx->height);
-    if (ost->frame)
+    if (!ost->frame)
     {
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);
@@ -640,7 +638,6 @@ static int write_video_frame(AVFormatContext* oc, OutputStream* ost)
 static void close_stream(AVFormatContext* oc, OutputStream* ost)
 {
     av_packet_free(&ost->packet);
-    avformat_free_context(oc);
     av_frame_free(&ost->frame);
     av_frame_free(&ost->tmp_frame);
     sws_freeContext(ost->sws_ctx);
