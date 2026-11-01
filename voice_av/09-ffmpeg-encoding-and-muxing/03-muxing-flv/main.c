@@ -111,7 +111,7 @@ static void add_stream(OutputStream* ost,
         exit(1);
     }
     // 新建码流 绑定到 AVFormatContext stream->index 有设置
-    ost->st = avformat_new_stream(oc, NULL);  // 创建一个刘成分
+    ost->st = avformat_new_stream(oc, NULL);  // 创建一个流成分
     if (!ost->st)
     {
         fprintf(stderr, "Could not allocate stream\n");
@@ -121,7 +121,7 @@ static void add_stream(OutputStream* ost,
     但是id是从0开始，比如第1个流:对应流id = nb_streams(1)-1 = 0
                     第2个流:对应流id = nb_streams(2)-1 = 1
     */
-    ost->st->index = oc->nb_streams - 1;
+    ost->st->id = oc->nb_streams - 1;
     codec_ctx = avcodec_alloc_context3(*codec);  // 创建编码器上下文
     if (!codec_ctx)
     {
@@ -350,7 +350,7 @@ static AVFrame* get_audio_frame(OutputStream* ost)
     int16_t* q = (int16_t*)frame->data[0];
 
     /* check if we want to generate more frames */
-    // 44100 * {1，44100} = 1 -> 44100*5 *{1,44100} = 5
+    // 44100 * {1,44100} = 1 -> 44100*5 *{1,44100} = 5
     // 5 *{1,1} = 5
     if (av_compare_ts(ost->next_pts, ost->enc->time_base, STREAM_DURATION, (AVRational){1, 1}) >= 0)
     {
