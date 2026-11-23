@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>0VoiceRTC-零声学院</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="icon" href="images/app_57x57.png" type="image/x-icon" />
+    <link href="style/common.css" rel="stylesheet" type="text/css" />
+    <link href="style/login.css" rel="stylesheet" type="text/css" />
+    <link href="style/sweetalert.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="config.js?v=20180817"></script>
+    <script type="text/javascript" src="js/jquery-2.1.3.min.js"></script>
+    <script type="text/javascript" src="js/common.js?v=20180412"></script>
+    <script type="text/javascript" src="js/util.js?v=20180412"></script>
+    <script type="text/javascript" src="js/sweetalert.min.js"></script>
+    <style type="text/css">
+        #footer {
+            height: 40px;
+            line-height: 40px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            background: #3798ff;
+            color: #fff;
+            font-family: Arial;
+            font-size: 17px;
+            letter-spacing: 16x;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="voice-main">
+        <div class="voice-content">
+            <div class="voice-logoarea">
+                <!-- <div class="voice-media-btn"></div>
+                <div class="voice-mediaarea">
+                    <div class="voice-media-desc">选择分辨率</div>
+                    <div class="voice-media-resolution">
+                        <ul>
+                            <li><input type="radio" id="radio-1" name="media_radio" class="voice-radio"
+                                    value="320*240" /><label for="radio-1"></label></li>
+                            <li>320*240</li>
+                        </ul>
+                        <ul>
+                            <li><input type="radio" id="radio-2" name="media_radio" class="voice-radio"
+                                    value="640*480" /><label for="radio-2"></label></li>
+                            <li>640*480</li>
+                        </ul>
+                    </div>
+                </div> -->
+                <!-- <div class="voice-logo"></div> -->
+                <div class="voice-version">
+                    <p>零声学院 音视频会议</p>
+                    <p>0VoiceConference V1.0.0</p>
+                </div>
+            </div>
+            <div class="voice-inputarea">
+                <!-- <div style="display: flex; align-items: center;"> -->
+                <!-- <p>请输入房间ID</p> -->
+                <div>
+                    <b>请输入房间ID: </b>
+                    <!--输入信息-->
+                    <input id="voice-roomId" type="text" class="voice-input-text" placeholder="请在这里输入房间ID"
+                        maxlength='40' />
+                </div>
+                <br>
+                <div>
+                    <b>请输入用户名: </b>
+                        <!--输入信息-->
+                    <input id="voice-userNameId" type="text" class="voice-input-text" placeholder="请在这里输入用户名"
+                        maxlength='40' />
+                </div>
+                <div style="clear: both;">
+                    <input data-video-call='video' name="voice-talkType" type="radio" checked="checked" />视频通话
+                    <input data-video-call='voice' name="voice-talkType" type="radio" />语音通话
+                </div>
+                <input type="button" checked="checked" value="创建会议" class="voice-input-btn" id="create-room" />
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <input type="button" checked="checked" value="加入会议" class="voice-input-btn" id="join-room" />
+            </div>
+        </div>
+    </div>
+    <div id="footer">腾讯课堂 零声学院 https://0voice.ke.qq.com </div>
+
+    <script src="js/login.js"></script>
+</body>
+
+</html>

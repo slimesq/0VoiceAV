@@ -1,6 +1,8 @@
-voice_av_add_current_example_executable()
-voice_av_get_current_example_target_name(targetName)
+cmake_minimum_required(VERSION 3.22)
 
-target_include_directories(${targetName} PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    project(voice_av_09_05_mp4muxer_04 LANGUAGES C CXX)
+    include("${CMAKE_CURRENT_LIST_DIR}/../../../cmake/VoiceAVExamples.cmake")
+endif()
+
+voice_av_add_current_example_executable()

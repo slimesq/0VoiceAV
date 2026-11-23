@@ -15,7 +15,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $ffmpegVersion = "7.1.3"
-$ffmpegNavigationStampVersion = "2"
+$ffmpegNavigationStampVersion = "3"
 $compilerCppStd = "17"
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -27,9 +27,8 @@ $archivePath = Join-Path $downloadDir "ffmpeg-$ffmpegVersion.tar.bz2"
 $archiveTempPath = "$archivePath.tmp"
 $extractDir = Join-Path $thirdPartyDir "_ffmpeg-extract"
 $ffmpegUrl = "https://ffmpeg.org/releases/ffmpeg-$ffmpegVersion.tar.bz2"
-$generatorDir = Join-Path $repoRoot "build/windows/generators"
+$generatorRoot = Join-Path $repoRoot "build/windows/generators"
 $dependencyStateDir = Join-Path $repoRoot "build/windows/dependency_state"
-$dependencyStampPath = Join-Path $dependencyStateDir "conan-install.stamp"
 $script:StepNumber = 0
 
 function Write-Section {
@@ -95,6 +94,30 @@ function Test-InteractiveInput {
         return -not [Console]::IsInputRedirected
     } catch {
         return $false
+    }
+}
+
+function Assert-DependencyTools {
+    if (-not (Get-Command conan -ErrorAction SilentlyContinue)) {
+        throw "Conan 2 is required. Install Conan 2 and add conan to PATH."
+    }
+    if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
+        throw "CMake 3.22 or newer is required. Install CMake and add it to PATH."
+    }
+
+    # Read native command failures as version check results on both PowerShell versions.
+    $ErrorActionPreference = "Continue"
+    $PSNativeCommandUseErrorActionPreference = $false
+    $conanVersion = (& conan --version 2>&1) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or $conanVersion -notmatch '(?m)^Conan version 2\.') {
+        throw "Conan 2 is required. Check 'conan --version' and the ordering of PATH."
+    }
+
+    $cmakeVersion = (& cmake --version 2>&1) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or
+        $cmakeVersion -notmatch '(?m)^cmake version (\d+\.\d+(?:\.\d+)?)' -or
+        [version]$Matches[1] -lt [version]"3.22") {
+        throw "CMake 3.22 or newer is required. Check 'cmake --version' and the ordering of PATH."
     }
 }
 
@@ -279,12 +302,14 @@ function Ensure-FFmpegNavigationFiles {
 #define HAVE_AVX 1
 #define HAVE_AVX2 1
 #define HAVE_AVX512 0
+#define HAVE_SIMD_ALIGN_64 HAVE_AVX512
 #define HAVE_INLINE_ASM 0
 #define HAVE_X86ASM 0
 
 #define CONFIG_SMALL 0
 #define CONFIG_RUNTIME_CPUDETECT 1
 #define CONFIG_GRAY 0
+#define CONFIG_ERROR_RESILIENCE 1
 #define CONFIG_FRAME_THREAD_ENCODER 1
 #define CONFIG_GPL 1
 #define CONFIG_VERSION3 1
@@ -293,6 +318,7 @@ function Ensure-FFmpegNavigationFiles {
 #define CONFIG_AVFILTER 1
 #define CONFIG_AVFORMAT 1
 #define CONFIG_AVUTIL 1
+#define CONFIG_MPEGVIDEODEC 1
 #define CONFIG_POSTPROC 1
 #define CONFIG_SWRESAMPLE 1
 #define CONFIG_SWSCALE 1
@@ -386,13 +412,15 @@ function Get-ConanInstallStamp {
         [string]$ConanBuildType,
 
         [Parameter(Mandatory = $true)]
-        [string]$BuildPolicy
+        [string]$BuildPolicy,
+
+        [string]$LockfilePath
     )
 
     $conanfilePath = Join-Path $repoRoot "conanfile.py"
     $profilePath = Join-Path $conanHome "profiles/default"
 
-    return @(
+    $stamp = @(
         "stamp_version=2"
         "ffmpeg_version=$ffmpegVersion"
         "flavor=$Flavor"
@@ -401,7 +429,38 @@ function Get-ConanInstallStamp {
         "build_policy=$BuildPolicy"
         "conanfile_sha256=$(Get-FileSha256 -Path $conanfilePath)"
         "profile_sha256=$(Get-FileSha256 -Path $profilePath)"
-    ) -join "`n"
+    )
+    if ($LockfilePath) {
+        $stamp += "lockfile_sha256=$(Get-FileSha256 -Path $LockfilePath)"
+    }
+    return $stamp -join "`n"
+}
+
+function Test-ConanGeneratedPackages {
+    $requiredGeneratorFiles = @(
+        (Join-Path $generatorDir "conan_toolchain.cmake"),
+        (Join-Path $generatorDir "ffmpeg-config.cmake"),
+        (Join-Path $generatorDir "ffmpeg-Target-$($conanBuildType.ToLowerInvariant()).cmake")
+    )
+
+    foreach ($requiredFile in $requiredGeneratorFiles) {
+        if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
+            Write-Info "Missing generated Conan file: $requiredFile"
+            return $false
+        }
+    }
+
+    $ErrorActionPreference = "Continue"
+    $PSNativeCommandUseErrorActionPreference = $false
+    $packageCheckScript = Join-Path $repoRoot "cmake/CheckConanPackages.cmake"
+    $checkOutput = & cmake "-DVOICE_AV_CONAN_GENERATORS_DIR:PATH=$generatorDir" -P $packageCheckScript 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        foreach ($line in $checkOutput) {
+            Write-Info ([string]$line)
+        }
+        return $false
+    }
+    return $true
 }
 
 function Test-ConanInstallFresh {
@@ -414,23 +473,42 @@ function Test-ConanInstallFresh {
         return $false
     }
 
-    $requiredGeneratorFiles = @(
-        (Join-Path $generatorDir "conan_toolchain.cmake"),
-        (Join-Path $generatorDir "ffmpeg-config.cmake")
-    )
-
-    foreach ($requiredFile in $requiredGeneratorFiles) {
-        if (-not (Test-Path -LiteralPath $requiredFile)) {
-            return $false
-        }
-    }
-
-    if (-not (Test-Path -LiteralPath $dependencyStampPath)) {
+    if (-not (Test-Path -LiteralPath $dependencyStampPath -PathType Leaf)) {
         return $false
     }
 
     $currentStamp = Get-Content -LiteralPath $dependencyStampPath -Raw -Encoding UTF8
-    return ($currentStamp.Trim() -eq $ExpectedStamp.Trim())
+    if ([string]::IsNullOrWhiteSpace($currentStamp) -or $currentStamp.Trim() -ne $ExpectedStamp.Trim()) {
+        return $false
+    }
+
+    if (-not (Test-ConanGeneratedPackages)) {
+        Write-Notice "Cached Conan package files could not be verified. Refreshing the dependency setup."
+        return $false
+    }
+    return $true
+}
+
+function Write-GeneratedText {
+    param([string]$Path, [string]$Content)
+
+    if ((Test-Path -LiteralPath $Path -PathType Leaf) -and
+        [System.IO.File]::ReadAllText($Path) -eq $Content) {
+        return
+    }
+    $temporaryPath = "$Path.$([Guid]::NewGuid().ToString('N')).tmp"
+    try {
+        [System.IO.File]::WriteAllText($temporaryPath, $Content, $utf8NoBom)
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            [System.IO.File]::Replace($temporaryPath, $Path, [NullString]::Value)
+        } else {
+            [System.IO.File]::Move($temporaryPath, $Path)
+        }
+    } finally {
+        if (Test-Path -LiteralPath $temporaryPath -PathType Leaf) {
+            Remove-Item -LiteralPath $temporaryPath -Force
+        }
+    }
 }
 
 function Sync-FFmpegSource {
@@ -492,6 +570,8 @@ function Sync-FFmpegSource {
     Write-Success "FFmpeg source ready: $ffmpegSourceDir"
 }
 
+Assert-DependencyTools
+
 Write-Section "Voice AV dependency setup"
 Write-Info "Repository: $repoRoot"
 Write-Info "Project Conan cache: $conanHome"
@@ -540,11 +620,20 @@ if ($BuildType -notin @("Debug", "Release")) {
 
 $conanBuildType = $BuildType
 $buildPolicy = if ($Flavor -eq "light") { "never" } else { "missing" }
+$dependencyLockfile = ""
+if ($Flavor -eq "light") {
+    $dependencyLockfile = Join-Path $repoRoot "conan/windows-light.lock"
+    if (-not (Test-Path -LiteralPath $dependencyLockfile -PathType Leaf)) {
+        throw "The Windows light dependency lockfile is missing: $dependencyLockfile"
+    }
+}
 
 if ($Flavor -eq "light" -and $BuildType -eq "Debug") {
     $conanBuildType = "Release"
     Write-Notice "Debug selected. Using Release Conan packages for light FFmpeg because Conan Center does not provide Debug binaries for this dependency set."
 }
+$generatorDir = Join-Path $generatorRoot $Flavor
+$dependencyStampPath = Join-Path $dependencyStateDir "${Flavor}-${conanBuildType}.stamp"
 
 Write-Section "Selected configuration"
 Write-Info "FFmpeg flavor: $Flavor"
@@ -577,7 +666,8 @@ if (-not (Test-Path -LiteralPath $defaultProfile)) {
 $conanInstallStamp = Get-ConanInstallStamp `
     -Flavor $Flavor `
     -ConanBuildType $conanBuildType `
-    -BuildPolicy $buildPolicy
+    -BuildPolicy $buildPolicy `
+    -LockfilePath $dependencyLockfile
 
 Write-Step "Checking Conan dependencies"
 
@@ -593,23 +683,38 @@ if (Test-ConanInstallFresh -ExpectedStamp $conanInstallStamp) {
     }
 
     Write-Step "Running conan install"
-    conan install $repoRoot `
-      -r=conancenter `
-      "--build=$buildPolicy" `
-      -c "tools.build:jobs=$Jobs" `
-      -c "tools.cmake.cmaketoolchain:user_presets=" `
-      -s "build_type=$conanBuildType" `
-      -s "compiler.cppstd=$compilerCppStd" `
-      -o "&:ffmpeg_flavor=$Flavor"
+    $installArguments = @(
+        "install", $repoRoot, "-r=conancenter", "--build=$buildPolicy"
+        "-c", "tools.build:jobs=$Jobs"
+        "-c", "tools.cmake.cmaketoolchain:user_presets="
+        "-s", "build_type=$conanBuildType"
+        "-s", "compiler.cppstd=$compilerCppStd"
+        "-o", "&:ffmpeg_flavor=$Flavor"
+    )
+    if ($dependencyLockfile) {
+        $installArguments += "--lockfile=$dependencyLockfile"
+    }
+    conan @installArguments
     if ($LASTEXITCODE -ne 0) {
         throw "conan install failed with exit code $LASTEXITCODE"
     }
+    if (-not (Test-ConanGeneratedPackages)) {
+        throw "Conan installation did not leave usable dependencies. If a cached package is incomplete, remove the affected package from $conanHome and rerun setup."
+    }
 
     New-Item -ItemType Directory -Force -Path $dependencyStateDir | Out-Null
-    [System.IO.File]::WriteAllText($dependencyStampPath, $conanInstallStamp, $utf8NoBom)
+    Write-GeneratedText -Path $dependencyStampPath -Content $conanInstallStamp
     Write-Success "Conan install finished."
 }
 
+Write-GeneratedText -Path (Join-Path $generatorRoot "active-flavor.txt") -Content "$Flavor`n"
+$selector = [System.IO.File]::ReadAllText((Join-Path $repoRoot "cmake/ConanActiveToolchain.cmake"))
+Write-GeneratedText -Path (Join-Path $generatorRoot "conan_toolchain.cmake") -Content $selector
+
 Write-Step "Generating clangd compile database"
-& (Join-Path $repoRoot "update_clangd.ps1") -BuildType $BuildType
+try {
+    & (Join-Path $repoRoot "update_clangd.ps1") -BuildType $BuildType
+} catch {
+    Write-Warning "clangd refresh skipped. $($_.Exception.Message) Run ./update_clangd.ps1 after resolving the configuration error."
+}
 Write-Success "Dependency setup complete."

@@ -20,8 +20,9 @@ class VoiceAVLearningConan(ConanFile):
 
     def layout(self):
         platform_name = str(self.settings.os).lower()
+        flavor = str(self.options.ffmpeg_flavor)
         self.folders.build = f"build/{platform_name}"
-        self.folders.generators = f"build/{platform_name}/generators"
+        self.folders.generators = f"build/{platform_name}/generators/{flavor}"
 
     def configure(self):
         ffmpeg = self.options["ffmpeg"]

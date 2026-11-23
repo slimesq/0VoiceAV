@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:padding="10dp"
+        android:id="@+id/video_url_view"
+        android:textSize="16sp"
+        android:hint="请输入视频url"
+        android:text="http://videoconverter.vivo.com.cn/201706/655_1498479540118.mp4.main.m3u8"
+        android:background="@drawable/border"
+        android:textColor="@color/black"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:gravity="top" />
+
+    <LinearLayout
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/play_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimaryDark"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:textColor="@color/white"
+            android:text="开始播放" />
+
+        <RadioGroup
+            android:layout_marginTop="10dp"
+            android:id="@+id/play_btn_group"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <RadioButton
+                android:id="@+id/ijkplayer_btn"
+                android:textSize="15sp"
+                android:text="IjkPlayer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <RadioButton
+                android:layout_marginLeft="10dp"
+                android:id="@+id/exoplayer_btn"
+                android:textSize="15sp"
+                android:text="ExoPlayer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </RadioGroup>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <CheckBox
+            android:id="@+id/local_proxy_box"
+            android:text="边下边播"
+            android:textColor="@color/black"
+            android:textSize="15sp"
+            android:layout_marginRight="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/clear_cache_view"
+            android:layout_marginLeft="20dp"
+            android:text="清理缓存"
+            android:background="@color/colorPrimaryDark"
+            android:textSize="16sp"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:textColor="@color/white"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/cache_size_view"
+            android:text="缓存大小"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginLeft="20dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginTop="10dp"
+        android:id="@+id/video_layout"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <TextView
+            android:id="@+id/cached_location_view"
+            android:layout_marginLeft="5dp"
+            android:text="存储位置"
+            android:textColor="@color/black"
+            android:layout_marginTop="5dp"
+            android:textSize="15sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <ListView
+            android:id="@+id/video_list"
+            android:divider="@color/colorPrimaryDark"
+            android:dividerHeight="2px"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+        </ListView>
+
+    </LinearLayout>
+
+</LinearLayout>

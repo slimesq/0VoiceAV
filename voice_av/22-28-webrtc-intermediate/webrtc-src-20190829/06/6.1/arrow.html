@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <title>arrow</title>
+  </head>
+  <body>
+    <script>
+      console.log("普通函数方式");
+      var arr1 = [1, 2, 3, 4, 5];
+      arr1.forEach(function(e) {
+        console.log(e);
+      });
+
+      console.log("箭头函数方式");
+      var arr2 = [1, 2, 3, 4, 5];
+      arr2.forEach((e) => console.log(e));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+build
+.gradle
+.idea
+local.properties
+app/app.iml
+playerlib/playerlib.iml
+exoplayerlib/exoplayerlib.iml
+ijkplayerlib/ijkplayerlib.iml
+mediaproxylib/mediaproxylib.iml
+mediaproxylib/build
+mediaproxylib/build/*
+/MediaSDK.iml

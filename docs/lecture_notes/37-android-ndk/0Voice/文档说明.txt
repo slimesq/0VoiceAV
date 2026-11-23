@@ -1,0 +1,1 @@
+ffmpeg-4.2.1-sh.tar.bz2 为Android利用ndk(r22)编译ffmpeg-4.2.1-0.1-beta.pdf对应的编译脚本。

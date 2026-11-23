@@ -31,8 +31,8 @@ MP4合成的回顾部分和后续过滤器课程继续使用第9、10章，不�
 | 第9章MP4合成 | global header、各轨道时间基及写包转换 | [MP4 muxer](../../../voice_av/09-ffmpeg-encoding-and-muxing/05-mp4muxer-5/src/muxer.cpp) |
 | 第10章滤镜图与amix | 多输入PTS、EOF、实时节拍与后续编码 | [AudioMixer](../../../voice_av/10-ffmpeg-filtering/03-audio-mix/src/audiomixer.cpp) |
 
-原理复习可看[H.264与H.265对比讲义](../09-ffmpeg-encoding-and-muxing/0Voice/AI/H264与H265编码原理对比讲义.md)
-以及[SPS与PPS实战讲义](../09-ffmpeg-encoding-and-muxing/0Voice/AI/H264_SPS与PPS解析及流媒体RTC实战讲义.md)。
+原理复习可看[H.264与H.265对比讲义](../09-ffmpeg-encoding-and-muxing/AI/H264与H265编码原理对比讲义.md)
+以及[SPS与PPS实战讲义](../09-ffmpeg-encoding-and-muxing/AI/H264_SPS与PPS解析及流媒体RTC实战讲义.md)。
 本组重点是工程连接，不重复完整的编码工具原理。
 
 ## 3 配合学习计划的阅读顺序

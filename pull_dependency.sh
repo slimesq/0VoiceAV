@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ffmpeg_version="7.1.3"
-ffmpeg_navigation_stamp_version="1"
+ffmpeg_navigation_stamp_version="2"
 compiler_cppstd="17"
 conan_compiler_version="13"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,10 +14,9 @@ archive_path="$download_dir/ffmpeg-$ffmpeg_version.tar.bz2"
 archive_temp_path="$archive_path.tmp"
 extract_dir="$third_party_dir/_ffmpeg-extract"
 ffmpeg_url="https://ffmpeg.org/releases/ffmpeg-$ffmpeg_version.tar.bz2"
-generator_dir="$repo_root/build/linux/generators"
+generator_root="$repo_root/build/linux/generators"
 clangd_build_dir="$repo_root/build/clangd"
 dependency_state_dir="$repo_root/build/linux/dependency_state"
-dependency_stamp_path="$dependency_state_dir/conan-install.stamp"
 step_number=0
 resolved_ffmpeg_source_dir=""
 
@@ -298,12 +297,14 @@ EOF
 #define HAVE_AVX 1
 #define HAVE_AVX2 1
 #define HAVE_AVX512 0
+#define HAVE_SIMD_ALIGN_64 HAVE_AVX512
 #define HAVE_INLINE_ASM 0
 #define HAVE_X86ASM 0
 
 #define CONFIG_SMALL 0
 #define CONFIG_RUNTIME_CPUDETECT 1
 #define CONFIG_GRAY 0
+#define CONFIG_ERROR_RESILIENCE 1
 #define CONFIG_FRAME_THREAD_ENCODER 1
 #define CONFIG_GPL 1
 #define CONFIG_VERSION3 1
@@ -312,6 +313,7 @@ EOF
 #define CONFIG_AVFILTER 1
 #define CONFIG_AVFORMAT 1
 #define CONFIG_AVUTIL 1
+#define CONFIG_MPEGVIDEODEC 1
 #define CONFIG_POSTPROC 1
 #define CONFIG_SWRESAMPLE 1
 #define CONFIG_SWSCALE 1
@@ -393,111 +395,73 @@ PY
     return 0
 }
 
-get_ffmpeg_package_include_dir() {
-    if [[ -d "$generator_dir" ]]; then
-        local data_file
-        while IFS= read -r data_file; do
-            local package_folder
-            package_folder="$(
-                sed -n 's/.*set(ffmpeg_PACKAGE_FOLDER_[A-Z0-9_]* "\(.*\)").*/\1/p' "$data_file" |
-                    head -n 1
-            )"
-            if [[ -n "$package_folder" ]]; then
-                package_folder="${package_folder//\$\{CMAKE_CURRENT_LIST_DIR\}/$generator_dir}"
-                if [[ -d "$package_folder/include" ]]; then
-                    realpath "$package_folder/include"
-                    return 0
-                fi
-            fi
-        done < <(find "$generator_dir" -maxdepth 1 -type f -name 'ffmpeg-*-data.cmake' | sort)
-    fi
-
-    if [[ -d "$conan_home" ]]; then
-        local include_dir
-        include_dir="$(
-            find "$conan_home" -type f -path '*/libavcodec/avcodec.h' -print -quit 2>/dev/null |
-                xargs -r dirname |
-                xargs -r dirname
-        )"
-        if [[ -n "$include_dir" && -d "$include_dir" ]]; then
-            realpath "$include_dir"
-            return 0
-        fi
-    fi
-
-    return 1
-}
-
 sync_clangd_compilation_database() {
     local ffmpeg_source="$1"
-    local ffmpeg_include_dir=""
-    local ffmpeg_include_arg=""
+    local config="${build_type,,}"
+    local cmake_build_dir="$repo_root/build/cmake-linux-$config"
 
-    if ffmpeg_include_dir="$(get_ffmpeg_package_include_dir)"; then
-        ffmpeg_include_arg="-isystem\"${ffmpeg_include_dir}\" "
-    fi
+    cmake --preset "voice-av-linux-$config" -S "$repo_root" \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON || return 1
 
-    REPO_ROOT="$repo_root" \
-    FFMPEG_SOURCE_DIR="$ffmpeg_source" \
-    FFMPEG_INCLUDE_ARG="$ffmpeg_include_arg" \
-    CLANGD_BUILD_DIR="$clangd_build_dir" \
-    python3 - <<'PY'
+    python3 - "$cmake_build_dir/compile_commands.json" "$ffmpeg_source/compile_commands.json" \
+        "$clangd_build_dir/compile_commands.json" "$repo_root/compile_commands.json" <<'PY' || return 1
+from contextlib import ExitStack
 import json
-import os
 from pathlib import Path
+import sys
+from tempfile import NamedTemporaryFile
 
-repo_root = Path(os.environ["REPO_ROOT"]).resolve()
-ffmpeg_source_dir = Path(os.environ["FFMPEG_SOURCE_DIR"]).resolve()
-ffmpeg_include_arg = os.environ["FFMPEG_INCLUDE_ARG"]
-clangd_build_dir = Path(os.environ["CLANGD_BUILD_DIR"]).resolve()
+def read_database(path):
+    entries = json.loads(path.read_text(encoding="utf-8-sig"))
+    if not isinstance(entries, list) or any(
+        not isinstance(entry, dict)
+        or not isinstance(entry.get("directory"), str)
+        or not entry["directory"].strip()
+        or not isinstance(entry.get("file"), str)
+        or not entry["file"].strip()
+        or not (
+            isinstance(entry.get("command"), str) and entry["command"].strip()
+            or isinstance(entry.get("arguments"), list) and entry["arguments"]
+            and all(isinstance(argument, str) for argument in entry["arguments"])
+        )
+        for entry in entries
+    ):
+        raise ValueError(f"Invalid compilation database: {path}")
+    return entries
 
-project_commands = []
-example_root = repo_root / "voice_av"
-if example_root.exists():
-    source_files = sorted(
-        [
-            *example_root.rglob("*.c"),
-            *example_root.rglob("*.cpp"),
-            *example_root.rglob("*.cc"),
-            *example_root.rglob("*.cxx"),
-        ]
-    )
-else:
-    source_files = []
+def stage_write(path, data, cleanup):
+    with NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", delete=False) as stream:
+        staged = Path(stream.name)
+        cleanup.callback(staged.unlink, missing_ok=True)
+        stream.write(data)
+    return staged
 
-relative_ffmpeg_source = ffmpeg_source_dir.relative_to(repo_root).as_posix()
-for source_file in source_files:
-    relative_source = source_file.relative_to(repo_root).as_posix()
-    is_cxx = source_file.suffix in {".cc", ".cpp", ".cxx"}
-    compiler = "clang++" if is_cxx else "clang"
-    language = "c++" if is_cxx else "c"
-    standard = "c++17" if is_cxx else "c11"
-    project_commands.append(
-        {
-            "directory": str(repo_root),
-            "command": (
-                f"{compiler} -x {language} -std={standard} -fsyntax-only "
-                "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH "
-                f"-I{relative_ffmpeg_source} {ffmpeg_include_arg}{relative_source}"
-            ),
-            "file": str(source_file),
-        }
-    )
+project, ffmpeg, primary, compatibility = map(Path, sys.argv[1:])
+entries = read_database(project)
+if not entries:
+    raise ValueError(f"No project compile commands in {project}")
+if ffmpeg.is_file():
+    entries.extend(read_database(ffmpeg))
 
-ffmpeg_commands_path = ffmpeg_source_dir / "compile_commands.json"
-if ffmpeg_commands_path.exists():
-    ffmpeg_commands = json.loads(ffmpeg_commands_path.read_text(encoding="ascii"))
-else:
-    ffmpeg_commands = []
+payload = (json.dumps(entries, indent=4) + "\n").encode("utf-8")
+primary.parent.mkdir(parents=True, exist_ok=True)
+with ExitStack() as cleanup:
+    primary_temp = stage_write(primary, payload, cleanup)
+    compatibility_temp = stage_write(compatibility, payload, cleanup)
+    backup = None
+    if compatibility.exists():
+        backup = stage_write(compatibility, compatibility.read_bytes(), cleanup)
 
-merged_commands = project_commands + ffmpeg_commands
-if not merged_commands:
-    raise SystemExit(0)
-
-clangd_build_dir.mkdir(parents=True, exist_ok=True)
-payload = json.dumps(merged_commands, indent=4)
-(clangd_build_dir / "compile_commands.json").write_text(payload, encoding="ascii")
-(repo_root / "compile_commands.json").write_text(payload, encoding="ascii")
+    # Publish the database read by clangd last and roll back the compatibility copy on failure.
+    compatibility_temp.replace(compatibility)
+    try:
+        primary_temp.replace(primary)
+    except OSError:
+        if backup is None:
+            compatibility.unlink()
+        else:
+            backup.replace(compatibility)
+        raise
 PY
 
     write_success "clangd compile database ready: $clangd_build_dir"
@@ -505,17 +469,15 @@ PY
 
 conan_install_stamp() {
     local selected_flavor="$1"
-    local selected_build_type="$2"
-    local conan_build_type="$3"
-    local conan_compiler_version="$4"
-    local build_policy="$5"
+    local conan_build_type="$2"
+    local conan_compiler_version="$3"
+    local build_policy="$4"
     local conanfile_path="$repo_root/conanfile.py"
     local profile_path="$conan_home/profiles/default"
 
     cat <<EOF
 ffmpeg_version=$ffmpeg_version
 flavor=$selected_flavor
-selected_build_type=$selected_build_type
 conan_build_type=$conan_build_type
 conan_compiler_version=$conan_compiler_version
 compiler_cppstd=$compiler_cppstd
@@ -525,17 +487,39 @@ profile_sha256=$(sha256_file "$profile_path")
 EOF
 }
 
+check_conan_generated_packages() {
+    local required_file
+    for required_file in "$generator_dir/conan_toolchain.cmake" \
+        "$generator_dir/ffmpeg-config.cmake" \
+        "$generator_dir/ffmpeg-Target-${conan_build_type,,}.cmake"; do
+        if [[ ! -f "$required_file" ]]; then
+            write_info "Missing generated Conan file: $required_file"
+            return 1
+        fi
+    done
+    cmake "-DVOICE_AV_CONAN_GENERATORS_DIR:PATH=$generator_dir" \
+        -P "$repo_root/cmake/CheckConanPackages.cmake"
+}
+
 conan_install_fresh() {
     local expected_stamp="$1"
 
-    if [[ "$force_conan" -eq 1 ]]; then
-        return 1
-    fi
-
-    [[ -f "$generator_dir/conan_toolchain.cmake" ]] || return 1
-    [[ -f "$generator_dir/ffmpeg-config.cmake" ]] || return 1
+    [[ "$force_conan" -eq 0 ]] || return 1
     [[ -f "$dependency_stamp_path" ]] || return 1
-    [[ "$(cat "$dependency_stamp_path")" == "$expected_stamp" ]]
+    [[ "$(cat "$dependency_stamp_path")" == "$expected_stamp" ]] || return 1
+    check_conan_generated_packages
+}
+
+publish_generated_text() {
+    local path="$1"
+    local temporary_path
+    temporary_path="$(mktemp "$path.XXXXXX")"
+    cat >"$temporary_path"
+    if cmp -s "$temporary_path" "$path"; then
+        rm -- "$temporary_path"
+    else
+        mv -f -- "$temporary_path" "$path"
+    fi
 }
 
 download_file() {
@@ -648,6 +632,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 require_command conan
+require_command cmake
 require_command bzip2
 require_command python3
 require_command realpath
@@ -714,6 +699,9 @@ if [[ "$flavor" == "light" ]]; then
     write_notice "Using Conan Center prebuilt packages only for light FFmpeg."
 fi
 
+generator_dir="$generator_root/$flavor"
+dependency_stamp_path="$dependency_state_dir/$flavor-$conan_build_type.stamp"
+
 ensure_gcc13_toolchain
 
 conan_system_package_manager_conf=(
@@ -753,7 +741,6 @@ fi
 expected_stamp="$(
     conan_install_stamp \
         "$flavor" \
-        "$build_type" \
         "$conan_build_type" \
         "$conan_compiler_version" \
         "$build_policy"
@@ -770,10 +757,11 @@ else
     conan remote add conancenter https://center2.conan.io --force
 
     write_step "Running conan install"
-    DEBIAN_FRONTEND=noninteractive conan install . \
+    DEBIAN_FRONTEND=noninteractive conan install "$repo_root" \
         -r=conancenter \
         "--build=$build_policy" \
         -c "tools.build:jobs=$jobs" \
+        -c "tools.cmake.cmaketoolchain:user_presets=" \
         "${conan_system_package_manager_conf[@]}" \
         -s "build_type=$conan_build_type" \
         -s "compiler=gcc" \
@@ -781,13 +769,17 @@ else
         -s "compiler.cppstd=$compiler_cppstd" \
         -o "&:ffmpeg_flavor=$flavor"
 
+    check_conan_generated_packages || die "Conan installation did not leave usable dependencies. If a cached package is incomplete, remove the affected package from $conan_home and rerun setup."
     mkdir -p "$dependency_state_dir"
-    printf '%s' "$expected_stamp" >"$dependency_stamp_path"
+    printf '%s' "$expected_stamp" | publish_generated_text "$dependency_stamp_path"
     write_success "Conan install finished."
 fi
 
-remove_repo_item "$repo_root/CMakeUserPresets.json"
+printf '%s\n' "$flavor" | publish_generated_text "$generator_root/active-flavor.txt"
+publish_generated_text "$generator_root/conan_toolchain.cmake" <"$repo_root/cmake/ConanActiveToolchain.cmake"
 
 write_step "Generating clangd compile database"
-sync_clangd_compilation_database "$resolved_ffmpeg_source_dir"
+if ! sync_clangd_compilation_database "$resolved_ffmpeg_source_dir"; then
+    write_notice "clangd refresh skipped. Fix the configuration error and rerun ./pull_dependency.sh to refresh the index."
+fi
 write_success "Dependency setup complete."

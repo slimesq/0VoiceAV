@@ -1,0 +1,55 @@
+/** 底部样式 */
+/* 动态为footer添加类fixed-bottom */
+.fixed-bottom {
+	position: fixed;
+}
+
+#voice-foot {
+	position: absolute;
+	bottom: 0px;
+	width: 100%;
+	height: 60px;
+	background-color: #dee0e2;
+	text-align: center;
+	z-index:100;
+}
+
+#voice-foot ul {
+	display: inline-block;
+	padding: 20px 0 0 0;
+	list-style: none;
+}
+
+#voice-foot ul li {
+	float: left;
+	line-height: 20px;
+	padding: 0 20px;
+	border-right: 1px solid #cccccc;
+	font-family: Microsoft YaHei;
+	font-size: 14px;
+	color: #333333;
+}
+
+#voice-foot ul li:last-of-type {
+	border-right: none;
+}
+
+#voice-foot ul li a {
+	font-family: Microsoft YaHei;
+	font-size: 14px;
+	color: #333333;
+	text-decoration: none;
+}
+
+#voice-foot ul li a:hover {
+	color: #23527c;
+	text-decoration: underline;
+}
+
+#voice-foot .copyright {
+	text-shadow: #fff 0 1px 1px;
+	-moz-text-shadow: #fff 0 1px 1px;
+	-ms-text-shadow: #fff 0 1px 1px;
+	-webkit-text-shadow: #fff 0 1px 1px;
+	-o-text-shadow: #fff 0 1px 1px;
+}

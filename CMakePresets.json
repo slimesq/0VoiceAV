@@ -7,13 +7,16 @@
   },
   "configurePresets": [
     {
-      "name": "voice-av-vs2022-x64",
-      "displayName": "Voice AV Visual Studio 2022 x64",
+      "name": "voice-av-windows-all",
+      "displayName": "0Voice AV Windows Desktop x64 / FFmpeg 7.1",
       "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/build/cmake",
       "architecture": "x64",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/windows/generators/conan_toolchain.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/windows/generators/conan_toolchain.cmake",
+        "VOICE_AV_WINDOWS_ALL": "ON",
+        "VOICE_AV_COURSE_ONLY": "OFF",
+        "VOICE_AV_COURSE_TARGETS": ""
       },
       "condition": {
         "type": "equals",
@@ -58,21 +61,21 @@
   ],
   "buildPresets": [
     {
-      "name": "voice-av-vs2022-x64-debug",
-      "displayName": "Voice AV Visual Studio 2022 x64 Debug",
-      "configurePreset": "voice-av-vs2022-x64",
+      "name": "voice-av-windows-all-debug",
+      "displayName": "0Voice AV All Windows Desktop Examples Debug",
+      "configurePreset": "voice-av-windows-all",
       "configuration": "Debug",
-      "jobs": 16,
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
-      }
+      },
+      "jobs": 16
     },
     {
-      "name": "voice-av-vs2022-x64-release",
-      "displayName": "Voice AV Visual Studio 2022 x64 Release",
-      "configurePreset": "voice-av-vs2022-x64",
+      "name": "voice-av-windows-all-release",
+      "displayName": "0Voice AV All Windows Desktop Examples Release",
+      "configurePreset": "voice-av-windows-all",
       "configuration": "Release",
       "jobs": 16,
       "condition": {

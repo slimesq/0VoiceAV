@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>WebRTC Demo</title>
+
+    <link rel="stylesheet" href="css/main.css" />
+
+</head>
+
+<body>
+
+    <h1>WebRTC Demo</h1>
+
+    <div id="buttons">
+        <input id="zero-roomId" type="text"   placeholder="请输入房间ID" maxlength='40'/>
+        <button id="joinBtn" type="button">加入</button>
+        <button id="leaveBtn" type="button">离开</button>
+    </div>
+
+    <div id="videos">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+
+    <script src="js/adapter-latest.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+
+</html>

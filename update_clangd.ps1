@@ -7,14 +7,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = $PSScriptRoot
-$generatorDir = Join-Path $repoRoot "build/windows/generators"
 $databaseBuildDir = Join-Path $repoRoot "build/clangd-cmake"
 $clangdBuildDir = Join-Path $repoRoot "build/clangd"
+$desktopCache = Join-Path $repoRoot "build/cmake/CMakeCache.txt"
 $ffmpegSourceDatabase = Join-Path $repoRoot "third_party/ffmpeg-src/compile_commands.json"
-
-if (-not (Test-Path -LiteralPath (Join-Path $generatorDir "ffmpeg-config.cmake"))) {
-    throw "FFmpeg dependencies are missing. Run ./pull_dependency.ps1 first."
-}
 
 $vswherePath = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio/Installer/vswhere.exe"
 if (-not (Test-Path -LiteralPath $vswherePath)) {
@@ -45,8 +41,8 @@ if (-not (Test-Path -LiteralPath $ninjaPath)) {
     throw "Ninja was not found. Install Ninja or the Visual Studio CMake tools."
 }
 
-# Load Conan package configs directly: its VS toolchain specifies a platform/toolset
-# that Ninja does not support. The project configures its own compiler options.
+# Let CMake select the active Conan configs in the Ninja build. Conan's Visual
+# Studio toolchain sets generator platform and toolset flags specific to VS.
 $configureArguments = @(
     "-S", $repoRoot,
     "-B", $databaseBuildDir,
@@ -55,23 +51,47 @@ $configureArguments = @(
     "-DCMAKE_C_COMPILER=cl",
     "-DCMAKE_CXX_COMPILER=cl",
     "-DCMAKE_MAKE_PROGRAM:FILEPATH=$ninjaPath",
-    "-DVOICE_AV_CONAN_GENERATORS_DIR:PATH=$generatorDir",
-    "-DCMAKE_PREFIX_PATH:PATH=$generatorDir",
-    "-Dffmpeg_DIR:PATH=$generatorDir",
+    "-DVOICE_AV_WINDOWS_ALL:BOOL=ON",
+    "-DVOICE_AV_COURSE_ONLY:BOOL=OFF",
+    "-DVOICE_AV_COURSE_TARGETS:STRING=",
+    "-U", "VOICE_AV_CONAN_GENERATORS_DIR",
+    "-U", "CMAKE_PREFIX_PATH",
     "-U", "CMAKE_MAP_IMPORTED_CONFIG_DEBUG",
     "-U", "CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO",
     "-U", "CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 )
 
+# Match the SDK paths selected by the desktop build, when it has been configured.
+if (Test-Path -LiteralPath $desktopCache -PathType Leaf) {
+    foreach ($line in Get-Content -LiteralPath $desktopCache -Encoding UTF8) {
+        if ($line -cmatch '^(VOICE_AV_COURSE_(?:SDL2_ROOT|QT_ROOT|FFMPEG_INTERNAL_ROOT)):PATH=(.*)$') {
+            $configureArguments += "-D$($Matches[1]):PATH=$($Matches[2])"
+        }
+    }
+}
+
 & cmake @configureArguments
 if ($LASTEXITCODE -ne 0) {
-    throw "CMake configuration failed. The existing clangd database was not updated."
+    throw "CMake could not configure all Windows desktop targets for clangd. See docs/ffmpeg-dependency.md for the x64 SDL2 and Qt 6 setup. The existing database was not updated."
 }
 
 $projectDatabase = Join-Path $databaseBuildDir "compile_commands.json"
 $mergedCommands = [System.Collections.Generic.List[object]]::new()
 $projectCommands = Get-Content -LiteralPath $projectDatabase -Raw -Encoding UTF8 | ConvertFrom-Json
+$qtAutogenTargets = @(
+    foreach ($entry in $projectCommands) {
+        if ($entry.file -match '[\\/](voice_av_[A-Za-z0-9_]+_autogen)[\\/]mocs_compilation\.cpp$') {
+            $Matches[1]
+        }
+    }
+)
+if ($qtAutogenTargets.Count -gt 0) {
+    & cmake --build $databaseBuildDir --target @qtAutogenTargets
+    if ($LASTEXITCODE -ne 0) {
+        throw "Qt header generation failed for clangd. The existing database was not updated."
+    }
+}
 foreach ($entry in $projectCommands) {
     $mergedCommands.Add($entry)
 }

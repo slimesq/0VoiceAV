@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Test url 1",
+    "uri": "http://videoconverter.vivo.com.cn/201706/655_1498479540118.mp4.main.m3u8"
+  },
+  {
+    "name": "Test url 2",
+    "uri": "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
+  },
+  {
+    "name": "Test url 3",
+    "uri": "http://kbs-dokdo.gscdn.com/dokdo_300/_definst_/dokdo_300.stream/playlist.m3u8"
+  },
+  {
+    "name": "Test url 4",
+    "uri": "https://tv.youkutv.cc/2020/01/15/3d97sO5xQUYB5bvY/playlist.m3u8"
+  },
+  {
+    "name": "Test url 5",
+    "uri": "https://hls.aoxtv.com/v3.szjal.cn/20200122/TIj9Ekt9/index.m3u8"
+  },
+  {
+    "name": "Test url 6",
+    "uri": "https://hls.aoxtv.com/v3.szjal.cn/20200114/dtOHlPFE/index.m3u8"
+  },
+  {
+    "name": "Test url 7",
+    "uri": "https://hls.aoxtv.com/v3.szjal.cn/20200115/qNIba0qo/index.m3u8"
+  },
+  {
+    "name": "Test url 8",
+    "uri": "https://m3u8.soyoung.com/9d0e36edc95edfa34fa049c3bfedf2e1_7d68ac41_new22.m3u8?sign=7f717d032fb7a53b4c628c22d7e9a206&t=5f0000fd"
+  }
+]

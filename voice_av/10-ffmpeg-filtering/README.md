@@ -17,7 +17,7 @@
 | `09-05-crop_flip.rar` | `05-crop-flip` | `voice_av_10_05_crop_flip` | 用 `avfilter_graph_parse2` 解析字符串，完成与02相同的处理 |
 | `ref-09-06-video_logo.rar` | `ref-06-video-logo` | `voice_av_10_ref_06_video_logo` | 视频解码 → `movie`/`overlay` → H.264 编码 |
 
-单文件程序直接放在示例目录；有本地头文件的程序使用 `include/` 和 `src/`。
+单文件程序直接放在示例目录。有本地头文件的程序使用 `inc/` 和 `src/`。
 参考示例与第9章的 `ref-09-06-video-logo` 同源，采用该示例已迁移的编解码流程。
 
 ## 构建
@@ -25,8 +25,8 @@
 从仓库根目录执行，依赖安装方式与第8、9章相同：
 
 ```powershell
-cmake --preset voice-av-vs2022-x64
-cmake --build --preset voice-av-vs2022-x64-debug --target voice_av_10_02_video_watermark voice_av_10_03_audio_mix voice_av_10_04_video_watermark voice_av_10_05_crop_flip voice_av_10_ref_06_video_logo
+cmake --preset voice-av-windows-all
+cmake --build --preset voice-av-windows-all-debug --target voice_av_10_02_video_watermark voice_av_10_03_audio_mix voice_av_10_04_video_watermark voice_av_10_05_crop_flip voice_av_10_ref_06_video_logo
 ```
 
 Ubuntu 使用现有 Linux preset，例如：

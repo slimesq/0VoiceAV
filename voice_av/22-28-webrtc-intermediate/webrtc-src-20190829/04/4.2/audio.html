@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<!--
+ *  版权：腾讯课堂 零声学院 https://0voice.ke.qq.com/?tuin=137bb271 .
+ *
+ *  文件名：audio.html
+ *  功能：打开麦克风并在页面播放捕获的声音
+-->
+<html >
+<body>
+    <audio id="local-audio" autoplay controls>播放麦克风捕获的声音</audio>
+    <button  id="playAudio">打开麦克风</button>
+
+    <p>通过getUserMedia()获取音频</p>
+</body>
+
+<script>
+    // 约束条件
+    const constraints = {
+        audio: true,
+        video: false
+    };
+
+    // 处理打开麦克风成功
+    function handleSuccess(stream) {
+        const audio = document.querySelector("#local-audio");
+        audio.srcObject = stream;
+    }
+
+    // 异常处理
+    function handleError(error) {
+        console.error("getUserMedia error: " + error);
+    }
+
+    function onOpenMicrophone(e) {
+        navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess).catch(handleError);
+    }
+    document.querySelector("#playAudio").addEventListener("click", onOpenMicrophone);
+</script>
+
+</html>

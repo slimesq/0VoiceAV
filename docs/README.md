@@ -14,15 +14,26 @@ or troubleshooting material here.
 
 ## Examples
 
-- [Voice AV Examples](../voice_av/README.md): example group layout, target naming
-  rules, and steps for adding a new example.
+The root build discovers example directories with a `CMakeLists.txt` in
+chapters 08, 09, and 10. Use [05-decode-audio](../voice_av/08-ffmpeg-demuxing-and-decoding/05-decode-audio/CMakeLists.txt)
+as a template. The shared helper derives `voice_av_08_05_decode_audio` from the
+directory name, collects files in the example directory, `src/`, and `inc/`,
+and adds `inc/` to the include path when present.
+
+After setting up dependencies, you can configure and build an individual
+example from the repository root on Windows:
+
+```powershell
+cmake -S voice_av/08-ffmpeg-demuxing-and-decoding/05-decode-audio -B build/example-08-05 -G "Visual Studio 17 2022" -A x64
+cmake --build build/example-08-05 --config Debug
+```
+
 - [Test Files](../voice_av/test_files/README.md): local media file names and
   where to place sample inputs and generated outputs.
-- [Chapter 10 Filter Lectures](lecture_notes/10-ffmpeg-filtering/README.md): original
-  PDFs and diagrams, with a source-to-example map and run instructions.
-- [Chapter 43 Supplement](lecture_notes/43-ffmpeg-hevc-hwaccel-and-mixing/README.md):
-  HEVC bitstreams, software encoding, NVENC, hardware decoding, and audio mixing
-  lectures that build on chapters 08, 09, and 10.
+
+## 课程讲义
+
+在[讲义索引](lecture_notes/README.md)中按章号查找课程讲义、AI 补充讲义和对应的源码目录。课程配图和课堂抓包随原讲义归入 `0Voice/`。
 
 ## Maintenance
 

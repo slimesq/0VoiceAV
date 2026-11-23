@@ -2,60 +2,62 @@ cmake_minimum_required(VERSION 3.22)
 
 project(VoiceAVLearning VERSION 0.1.0 LANGUAGES C CXX)
 
-set(VOICE_AV_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-set(VOICE_AV_EXAMPLES_DIR "${VOICE_AV_SOURCE_DIR}/voice_av")
-if(NOT VOICE_AV_CONAN_GENERATORS_DIR)
-    if(CMAKE_TOOLCHAIN_FILE)
-        get_filename_component(VOICE_AV_CONAN_GENERATORS_DIR "${CMAKE_TOOLCHAIN_FILE}" DIRECTORY)
-    else()
-        set(VOICE_AV_CONAN_GENERATORS_DIR "${VOICE_AV_SOURCE_DIR}/build/generators")
+option(VOICE_AV_WINDOWS_ALL "Build the Windows desktop course examples alongside the main examples" OFF)
+option(VOICE_AV_COURSE_ONLY "Build only the selected course targets" OFF)
+
+include(cmake/VoiceAVExamples.cmake)
+
+if(NOT VOICE_AV_COURSE_ONLY)
+    add_subdirectory(voice_av/00-ffmpeg-version)
+    file(GLOB _example_cmake_files CONFIGURE_DEPENDS
+        RELATIVE "${VOICE_AV_EXAMPLES_DIR}"
+        "${VOICE_AV_EXAMPLES_DIR}/08-ffmpeg-demuxing-and-decoding/*/CMakeLists.txt"
+        "${VOICE_AV_EXAMPLES_DIR}/09-ffmpeg-encoding-and-muxing/*/CMakeLists.txt"
+        "${VOICE_AV_EXAMPLES_DIR}/10-ffmpeg-filtering/*/CMakeLists.txt"
+    )
+    foreach(_example_cmake_file IN LISTS _example_cmake_files)
+        get_filename_component(_example_dir "${_example_cmake_file}" DIRECTORY)
+        add_subdirectory("${VOICE_AV_EXAMPLES_DIR}/${_example_dir}")
+    endforeach()
+endif()
+
+if(VOICE_AV_WINDOWS_ALL)
+    if(NOT WIN32 OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+        message(FATAL_ERROR "Use the Windows x64 MSVC preset for all desktop examples.")
+    endif()
+    if(NOT VOICE_AV_COURSE_TARGETS)
+        set(VOICE_AV_COURSE_TARGETS
+            voice_av_02_* voice_av_06_* voice_av_07_* voice_av_08_camera_dshow
+            voice_av_11_* voice_av_12_* voice_av_14_* voice_av_15_* voice_av_19_*
+            voice_av_37_gdb_* voice_av_37_make_*
+        )
     endif()
 endif()
-set(VOICE_AV_RUNTIME_OUTPUT_DIR "${CMAKE_BINARY_DIR}/$<CONFIG>")
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-option(
-    VOICE_AV_USE_RELEASE_CONAN_DEPS
-    "Use Release Conan packages for non-Release builds when Debug packages are unavailable"
-    ON
-)
-option(
-    VOICE_AV_WARNINGS_AS_ERRORS
-    "Treat compiler warnings as errors"
-    OFF
-)
-
-set(VOICE_AV_FFMPEG_DEBUG_CONFIG
-    "${VOICE_AV_CONAN_GENERATORS_DIR}/ffmpeg-Target-debug.cmake"
-)
-set(VOICE_AV_FFMPEG_RELEASE_CONFIG
-    "${VOICE_AV_CONAN_GENERATORS_DIR}/ffmpeg-Target-release.cmake"
-)
-
-set(VOICE_AV_USING_RELEASE_CONAN_DEPS OFF)
-if(VOICE_AV_USE_RELEASE_CONAN_DEPS
-    AND EXISTS "${VOICE_AV_FFMPEG_RELEASE_CONFIG}"
-    AND NOT EXISTS "${VOICE_AV_FFMPEG_DEBUG_CONFIG}"
-)
-    set(VOICE_AV_USING_RELEASE_CONAN_DEPS ON)
-    set(CMAKE_MAP_IMPORTED_CONFIG_DEBUG Release)
-    set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)
-    set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL Release)
+if(VOICE_AV_WINDOWS_ALL OR VOICE_AV_COURSE_ONLY OR VOICE_AV_COURSE_TARGETS)
+    add_subdirectory(cmake/course)
 endif()
 
-list(PREPEND CMAKE_PREFIX_PATH
-    "${CMAKE_BINARY_DIR}/generators"
-    "${VOICE_AV_CONAN_GENERATORS_DIR}"
-)
+if(VOICE_AV_WINDOWS_ALL)
+    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+    get_property(_examples GLOBAL PROPERTY VOICE_AV_EXAMPLE_EXECUTABLES)
+    set(_chapter_entries)
+    foreach(_target IN LISTS _examples)
+        get_target_property(_folder ${_target} FOLDER)
+        list(APPEND _chapter_entries "${_folder}/${_target}")
+    endforeach()
+    list(SORT _chapter_entries COMPARE NATURAL)
+    list(LENGTH _chapter_entries _example_count)
+    set(_report "Windows desktop examples in chapter order (${_example_count})\n")
+    foreach(_entry IN LISTS _chapter_entries)
+        get_filename_component(_target "${_entry}" NAME)
+        string(APPEND _report "${_target}\n")
+    endforeach()
+    set(_report_path "${CMAKE_BINARY_DIR}/windows-targets.txt")
+    file(CONFIGURE OUTPUT "${_report_path}" CONTENT "${_report}" @ONLY)
 
-find_package(ffmpeg REQUIRED CONFIG)
-
-include("${VOICE_AV_SOURCE_DIR}/cmake/VoiceAVHelpers.cmake")
-
-voice_av_add_example_groups()
+    # Print the chapter list after the independent targets finish in parallel.
+    add_custom_target(voice_av_build_summary ALL
+        COMMAND "${CMAKE_COMMAND}" -E cat "${_report_path}"
+        VERBATIM)
+    add_dependencies(voice_av_build_summary ${_examples})
+endif()

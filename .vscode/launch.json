@@ -2,12 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug 0Voice AV",
+      "name": "Debug 09_03 FLV muxer",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/cmake/Debug/voice_av_09_03_muxing_flv.exe",
       "args": ["09_03_out.flv"],
-      "cwd": "${workspaceFolder}/voice_av/test_files",
+      "cwd": "${workspaceFolder}/build/cmake/Debug",
+      "preLaunchTask": "Build 09_03 FLV muxer (Debug)",
       "stopAtEntry": false,
       "console": "integratedTerminal"
     }

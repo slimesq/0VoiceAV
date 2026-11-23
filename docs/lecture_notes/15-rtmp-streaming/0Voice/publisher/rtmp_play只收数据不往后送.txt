@@ -1,0 +1,100 @@
+[[INFO ] 2020/03/08 16:18:05-78 LQF::Looper::Looper:16] at Looper create
+[[INFO ] 2020/03/08 16:18:05-78 LQF::Looper::trampoline:8] at Looper trampoline
+[[INFO ] 2020/03/08 16:18:05-78 LQF::Looper::loop:74] into loop
+[[INFO ] 2020/03/08 16:18:05-125 LQF::CommonLooper::Start:19] at CommonLooper create
+[[INFO ] 2020/03/08 16:18:05-125 LQF::CommonLooper::trampoline:7] at CommonLooper trampoline
+[[INFO ] 2020/03/08 16:18:05-125 LQF::Looper::Looper:16] at Looper create
+[[INFO ] 2020/03/08 16:18:05-125 LQF::Looper::trampoline:8] at Looper trampoline
+[[INFO ] 2020/03/08 16:18:05-125 LQF::Looper::loop:74] into loop
+[[INFO ] 2020/03/08 16:18:05-140 LQF::RTMPBase::initRtmp:23] at rtmp object create
+[[INFO ] 2020/03/08 16:18:05-140 LQF::RTMPBase::Connect:135] base begin connect
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:411] keytime:rtmp_pull:metadata:t:59
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:26] begin parse info 24
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:36]  amf obj 3
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:124] val = |RtmpSampleAccess铪
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:124] val = (null)
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:124] val = (null)
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:411] keytime:rtmp_pull:metadata:t:61
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:26] begin parse info 44
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:36]  amf obj 2
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:124] val = onStatus
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = code
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:411] keytime:rtmp_pull:metadata:t:61
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:26] begin parse info 195
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:36]  amf obj 2
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:124] val = onMetaData
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = copyright
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = width
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:70] parse widht 720
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = height
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:75] parse Height 480
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = framerate
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:80] parse frame_rate 25
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = videodatarate
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = videocodecid
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:85] parse video_codec_id 7
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = server
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::parseScriptTag:48] val = server_version
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:331] keytime:rtmp_pull:aacheader:t:64
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:222] keytime:rtmp_pull:avcheader:t:64
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:276] keytime:rtmp_pull:avciframe:t:64
+[[INFO ] 2020/03/08 16:18:05-187 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:1:t:65
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:69
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:70
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:70
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:73
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:76
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:76
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:77
+[[INFO ] 2020/03/08 16:18:05-203 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:77
+[[INFO ] 2020/03/08 16:18:05-218 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:83
+[[INFO ] 2020/03/08 16:18:05-218 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:83
+[[INFO ] 2020/03/08 16:18:05-218 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:83
+[[INFO ] 2020/03/08 16:18:05-218 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:84
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:414
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:414
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:416
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:416
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:420
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:421
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:421
+[[INFO ] 2020/03/08 16:18:05-546 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:426
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:427
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:431
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:432
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:433
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:434
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:437
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:438
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:438
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:439
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:439
+[[INFO ] 2020/03/08 16:18:05-562 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:440
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:444
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:448
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:448
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:449
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:449
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:451
+[[INFO ] 2020/03/08 16:18:05-578 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:452
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:789
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:790
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:791
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:791
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:792
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:795
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:370] keytime:rtmp_pull:aacdata:t:795
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:796
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:796
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:797
+[[INFO ] 2020/03/08 16:18:06-921 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:801
+[[INFO ] 2020/03/08 16:18:06-937 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:801
+[[INFO ] 2020/03/08 16:18:06-937 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:802
+[[INFO ] 2020/03/08 16:18:06-937 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:802
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:1148
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:1148
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:1:t:1149
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:1149
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:1150
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:1154
+[[INFO ] 2020/03/08 16:18:06-281 LQF::RTMPPlayer::readPacketThread:283] keytime:rtmp_pull:avcframe:k:0:t:1154

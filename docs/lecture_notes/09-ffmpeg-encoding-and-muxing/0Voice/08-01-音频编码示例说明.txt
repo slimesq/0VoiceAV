@@ -1,0 +1,5 @@
+
+ffmpeg默认的aac编码器，默认编译出来的每帧数据都不带adts，
+但lib_fdk aac默认是带了adts header，而且此时codec_ctx->flags的值都为0.
+这样我们没法判断是否需要自己额外写入adts，因此我们在设置编码的时候可以直接
+将odec_ctx->flags = AV_CODEC_FLAG_GLOBAL_HEADER;  大家都不带adts

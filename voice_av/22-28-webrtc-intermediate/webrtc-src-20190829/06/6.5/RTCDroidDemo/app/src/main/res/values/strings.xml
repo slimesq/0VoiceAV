@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WebRTCDemo</string>
+    <string name="join_room">加入</string>
+    <string name="room_tips">输入房间号: </string>
+</resources>

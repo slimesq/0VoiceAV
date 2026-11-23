@@ -1,0 +1,6 @@
+rootProject.name='PlayerSDK'
+include ':app'
+include ':exoplayer'
+include ':ijkplayer'
+include ':playersdk'
+include ':gltoolkit'

@@ -24,8 +24,24 @@ third_party/_ffmpeg-extract/
 test_files/
 !voice_av/test_files/
 voice_av/test_files/*
-!voice_av/test_files/.gitkeep
 !voice_av/test_files/README.md
+
+# Local packages of the test media.
+/voice_av/test_files.zip
+/voice_av/test_files.zip.[0-9]*
+/voice_av/test_files.z[0-9][0-9]
+/voice_av/test_files.7z
+/voice_av/test_files.7z.[0-9]*
+/voice_av/test_files.part[0-9]*.zip
+/voice_av/test_files.part[0-9]*.7z
+
+# Runtime logs created by the sample players when launched from the repository root.
+/rtmp_pull.log/
+/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].log
+
+# Original teaching Makefiles, including the handwritten rules in huge/build.
+!voice_av/**/Makefile
+!voice_av/37-gdb-cmake/src-cmake/Makefile/huge/build/
 
 
 # CLion

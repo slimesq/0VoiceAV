@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!--
+ *  版权：腾讯课堂 零声学院 https://0voice.ke.qq.com/?tuin=137bb271 .
+ *
+ *  文件名：video.html
+ *  功能：获取音视频并将其显示到页面和播放声音
+-->
+<html>
+  <body>
+
+      <video id="local-video" autoplay playsinline muted controls></video>
+      <button id="showVideo">打开音视频</button>
+
+      <p>通过 <code>getUserMedia()</code> 获取音视频.</p>
+
+
+    <script>
+      // 设置约束条件, 同时打开音频流和视频流
+      const constraints = (window.constraints = {
+        audio: true,
+        // video: true
+        video: { width: 640, height: 480 }
+      });
+
+      // 处理打开摄像头+麦克风成功
+      function handleSuccess(stream) {
+        const video = document.querySelector("#local-video");
+        video.srcObject = stream;
+      }
+
+      // 处理打开摄像头+麦克风失败
+      function handleError(error) {
+        console.error("getUserMedia error: " + error);
+      }
+
+      async function onOpenAV(e) {
+        navigator.mediaDevices.getUserMedia(constraints).then(handleSuccess).catch(handleError);
+      }
+
+      document
+        .querySelector("#showVideo")
+        .addEventListener("click", onOpenAV);
+    </script>
+  </body>
+</html>
